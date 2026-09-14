@@ -1,45 +1,27 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+import { LogBox } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { Provider } from "react-redux";
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { fas } from '@fortawesome/free-solid-svg-icons';
 
-import { NewAppScreen } from '@react-native/new-app-screen';
-import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
-import {
-  SafeAreaProvider,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+import store from "./src/Redux/store";
+import MainStack from './src/Navigation/MainStack';
+library.add(fas);
 
-function App() {
-  const isDarkMode = useColorScheme() === 'dark';
+export default function App() {
 
-  return (
-    <SafeAreaProvider>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <AppContent />
-    </SafeAreaProvider>
-  );
-}
-
-function AppContent() {
-  const safeAreaInsets = useSafeAreaInsets();
+  LogBox.ignoreLogs(['Warning: ...']);
+  LogBox.ignoreAllLogs(); 
+  
 
   return (
-    <View style={styles.container}>
-      <NewAppScreen
-        templateFileName="App.tsx"
-        safeAreaInsets={safeAreaInsets}
-      />
-    </View>
+      <Provider store={store}>
+       
+      
+          <NavigationContainer >
+            <MainStack />
+          </NavigationContainer>
+        
+      </Provider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});
-
-export default App;
