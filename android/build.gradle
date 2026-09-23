@@ -11,7 +11,7 @@ buildscript {
     repositories {
         google()
         mavenCentral()
-        maven { url 'https://api.mapbox.com/downloads/v2/releases/maven' }
+       
     }
     dependencies {
         classpath("com.android.tools.build:gradle")
@@ -19,23 +19,7 @@ buildscript {
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin")
     }
 }
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-        maven { url 'https://www.jitpack.io' } // 👈 important
-    }
-    repositories {
-    maven { url "$rootDir/../../../node_modules/@notifee/react-native/android/libs" }
-    maven {
-            url 'https://api.mapbox.com/downloads/v2/releases/maven'
-            authentication {
-                basic(BasicAuthentication)
-            }
-            
-        }
-  }
-}
+
 
 apply plugin: "com.facebook.react.rootproject"
 apply plugin: "expo-root-project"
