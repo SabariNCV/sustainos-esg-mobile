@@ -1,4 +1,7 @@
 {
   "name": "ESG_SustainOS",
-  "displayName": "ESG_SustainOS"
+  "displayName": "ESG_SustainOS",
+  "plugins": [
+    "@react-native-community/datetimepicker"
+  ]
 }
