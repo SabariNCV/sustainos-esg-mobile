@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { getProjectList, loginUser } from "./actions/authActions";
+import { getProjectList, loginUser, getMenuProjectDetails, getGroupMenuDetails } from "./actions/authActions";
 
 const initialState = {
     loginLoading: false,
@@ -17,8 +17,13 @@ const initialState = {
     baseUrlIs: 'https://SustainOS.ai:9000/',
     menuBackground: '',
     pageName: '',
-    userDetails: {  },
+    userDetails: {},
     menu: [],
+    menuTheme: {},
+    menuThemeLoading: false,
+    menuThemeError: '',
+    groupMenuLoading: false,
+    groupMenuError: '',
 };
 
 const authSlice = createSlice({
@@ -32,11 +37,10 @@ const authSlice = createSlice({
             state.phoneNo = action.payload;
         },
         userDetails: (state, action) => {
-
             const { key, value } = action.payload;
             state.userDetails = {
                 ...state.userDetails,
-                [key]: value
+                [key]: value,
             };
         },
         baseUrlIs: (state, action) => {
@@ -60,7 +64,7 @@ const authSlice = createSlice({
             state.pageName = action.payload;
         },
         menu: (state, action) => {
-            state.menu = action.payload
+            state.menu = action.payload;
         },
     },
     extraReducers: (builder) => {
@@ -81,7 +85,6 @@ const authSlice = createSlice({
                 state.loginSuccess = false;
                 state.loginError = payload;
             })
-
             .addCase(getProjectList.pending, (state) => {
                 state.projectListLoading = true;
                 state.projectListError = '';
@@ -95,10 +98,34 @@ const authSlice = createSlice({
                 state.projectListLoading = false;
                 state.projectListSuccess = false;
                 state.projectListError = payload;
+            })
+            .addCase(getMenuProjectDetails.pending, (state) => {
+                state.menuThemeLoading = true;
+                state.menuThemeError = '';
+            })
+            .addCase(getMenuProjectDetails.fulfilled, (state, { payload }) => {
+                state.menuThemeLoading = false;
+                state.menuTheme = payload?.[0]?.json_data?.menuDetails ?? {};
+            })
+            .addCase(getMenuProjectDetails.rejected, (state, { payload }) => {
+                state.menuThemeLoading = false;
+                state.menuThemeError = payload;
+            })
+            .addCase(getGroupMenuDetails.pending, (state) => {
+                state.groupMenuLoading = true;
+                state.groupMenuError = '';
+            })
+            .addCase(getGroupMenuDetails.fulfilled, (state, { payload }) => {
+                state.groupMenuLoading = false;
+                state.menu = payload;
+            })
+            .addCase(getGroupMenuDetails.rejected, (state, { payload }) => {
+                state.groupMenuLoading = false;
+                state.groupMenuError = payload;
             });
-    }
+    },
 });
 
-export const { usertype, phoneNo, userDetails, baseUrlIs,menu, menuBackground, resetAuthState, clearAuthStates,pageName } = authSlice.actions;
+export const { usertype, phoneNo, userDetails, baseUrlIs, menu, menuBackground, resetAuthState, clearAuthStates, pageName, } = authSlice.actions;
 
 export default authSlice.reducer;

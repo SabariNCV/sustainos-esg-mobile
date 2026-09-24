@@ -1,11 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit';
-import {
-  fetchLineChartData,
-  captureChartImage,
-  fetchMenuProjectDetails,
-  fetchGroupMenuDetails
-} from './actions/componentActions';
-
+import { fetchLineChartData, captureChartImage, fetchMenuProjectDetails, fetchGroupMenuDetails } from './actions/componentActions';
 const initialState = {
   traces: [],
   chartData: null,

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { View, Image, StyleSheet, TouchableOpacity, Platform, Text } from 'react-native';
 import { FONTS } from '../Constants/Fonts';
 import { scaleWidth, scaleHeight, normalizeFont } from '../Constants/dynamicSize';

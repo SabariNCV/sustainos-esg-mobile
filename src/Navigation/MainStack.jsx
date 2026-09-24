@@ -1,13 +1,15 @@
 import * as React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Login from '../Screens/Auth/Login';
+import Splash from '../Screens/Auth/Splash';
+import OnboardingScreen from '../Screens/Auth/OnboardingScreen'
 import SideTab from '../Navigation/SideTab';
 import ChatScreen from  '../Screens/Chats/ChatScreen';
 const Stack = createNativeStackNavigator();
 function MainStack() {
   return (
     <Stack.Navigator id="RootStack">
-      {/* <Stack.Screen
+      <Stack.Screen
         name="Splash"
         component={Splash}
         options={{
@@ -16,7 +18,17 @@ function MainStack() {
           animationTypeForReplace: 'push',
           animation: 'slide_from_bottom'
         }}
-      /> */}
+      />
+      <Stack.Screen
+        name="OnboardingScreen"
+        component={OnboardingScreen}
+        options={{
+          headerShown: false,
+          presentation: 'fullScreenModal',
+          animationTypeForReplace: 'push',
+          animation: 'slide_from_right'
+        }}
+      />
       <Stack.Screen
         name="Login"
         component={Login}

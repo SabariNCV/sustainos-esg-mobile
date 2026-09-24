@@ -74,6 +74,7 @@
     "react-native-keychain": "^10.0.0",
     "react-native-linear-gradient": "^2.8.3",
     "react-native-plotly": "^6.0.0",
+    "react-native-progress": "^5.0.1",
     "react-native-reanimated": "4.3.1",
     "react-native-reanimated-carousel": "^5.1.1",
     "react-native-safe-area-context": "~5.7.0",

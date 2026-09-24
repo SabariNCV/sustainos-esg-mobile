@@ -7904,6 +7904,13 @@ react-native-plotly@^6.0.0:
   resolved "https://registry.yarnpkg.com/react-native-plotly/-/react-native-plotly-6.0.0.tgz#a21d4c12b70f6ea15b2d08f6b1c09391c4d17083"
   integrity sha512-coFr3EXCNrH8a1xftL+0+KgI1Hn4qDrwJDZD3YbnRmq/zESA+XAYPfMionXZxGb9+uydUTx/yCY69C7g4qWAfQ==
 
+react-native-progress@^5.0.1:
+  version "5.0.1"
+  resolved "https://registry.yarnpkg.com/react-native-progress/-/react-native-progress-5.0.1.tgz#4e15258b5661c49bad74554352326ca540bb7c58"
+  integrity sha512-TYfJ4auAe5vubDma2yfFvt7ktSI+UCfysqJnkdHEcLXqAitRFOozgF/cLgN5VNi/iLdaf3ga1ETi2RF4jVZ/+g==
+  dependencies:
+    prop-types "^15.7.2"
+
 react-native-ratings@8.0.4:
   version "8.0.4"
   resolved "https://registry.yarnpkg.com/react-native-ratings/-/react-native-ratings-8.0.4.tgz#efd5ebad8acc08bf98d34d39b18fb7a6813ef991"

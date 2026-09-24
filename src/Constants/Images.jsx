@@ -24,4 +24,7 @@ export const IMAGES = {
     yellowmic: require("../Assets/yellowmic.png"),
     send: require("../Assets/send.png"),
     mic: require("../Assets/mic.png"),
+    onboard1: require("../Assets/onboard1.png"),
+    onboard2: require("../Assets/onboard2.png"),
+    onboard3: require("../Assets/onboard3.png")
 }

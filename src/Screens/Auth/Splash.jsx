@@ -31,10 +31,7 @@ const SplashGif = memo(() => {
     return (
         <View style={styles.splashinsideContainer}>
             <View style={styles.AlignCenter}>
-                <FastImage
-                    source={frozen ? IMAGES.SustainOS : IMAGES.splash}
-                    style={styles.firstAnimation}
-                />
+                <FastImage source={frozen ? IMAGES.SustainOS : IMAGES.splash} style={styles.firstAnimation} />
             </View>
         </View>
     );
@@ -65,11 +62,11 @@ const Splash = ({ navigation }) => {
             const onboard = await withTimeout(AsyncStorage.getItem("isOnboard"), 500);
 
             if (token) {
-                // if (skip === 'true' || onboard === 'true') {
+                if (skip === 'true' || onboard === 'true') {
                     return await resolveNextScreen();
-                // } else {
-                //     return { screen: 'MainScreen' };
-                // }
+                } else {
+                    return { screen: 'MainScreen' };
+                }
             } else {
                 return { screen: 'Login' };
             }

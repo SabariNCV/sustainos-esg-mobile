@@ -132,7 +132,6 @@ export const styles = StyleSheet.create({
   settingsview: {
     justifyContent: 'space-between',
     flexDirection: 'row',
-    flexDirection: 'row',
     alignItems: 'flex-start',
     position: 'absolute',
     bottom: scaleHeight(50),
@@ -141,16 +140,11 @@ export const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     height: scaleHeight(50),
   },
-  close: {
-    height: scaleHeight(20),
-    width: scaleWidth(20)
-  },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignContent: 'center',
     alignItems: 'center',
-
   },
   netCarbo: {
     color: COLORS.GREEN,
@@ -213,5 +207,48 @@ export const styles = StyleSheet.create({
     fontSize: normalizeFont(14),
     fontWeight: '600',
   },
-
+  menuWrapper: {
+    flex: 1,
+    marginTop: Platform.OS === 'ios' ? '0%' : '15%',
+  },
+  menuListWrapper: {
+    marginTop: scaleHeight(30),
+  },
+  menuList: {
+    marginTop: scaleHeight(20),
+    height: '72%',
+  },
+  menuListContent: {
+    paddingBottom: scaleHeight(100),
+  },
+  menuGroupWrapper: {
+    marginBottom: scaleHeight(5),
+  },
+  mainMenuContainer: {
+    flexDirection: 'row',
+    marginLeft: scaleWidth(10),
+    alignItems: 'center',
+    width: '80%',
+    borderRadius: 10,
+  },
+  chevronIcon: {
+    marginLeft: scaleWidth(45),
+  },
+  subMenuWrapper: {
+    marginTop: scaleHeight(3),
+    marginLeft: scaleWidth(10),
+    width: '80%',
+  },
+  subMenuRow: {
+    borderRadius: 10,
+  },
+  subMenuIcon: {
+    marginLeft: scaleWidth(30),
+  },
+  subSubIcon: {
+    marginLeft: scaleWidth(60),
+  },
+  iconSpacing: {
+    marginRight: scaleWidth(10),
+  },
 });
