@@ -1,85 +1,108 @@
-import React, { useEffect } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity
-} from 'react-native';
-import {
-    normalizeFont,
-    scaleHeight,
-    scaleWidth,
-} from '../../../Constants/dynamicSize';
+import React, { useCallback, useEffect, useMemo } from 'react';
+import { Text, StyleSheet, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { useDispatch } from 'react-redux';
+import PropTypes from 'prop-types';
+import { FONTS } from '../../../Constants/Fonts';
 import { updateHeight } from '../../../Redux/ReduxSlice/mainSlice';
-import { FONTS } from "../../../Constants/Fonts";
-import { panelscaleHeight, panelscaleWidth, panelnormalizeFont } from '../../../Constants/panelSize';
+import { parseFontSize } from '../../../Components/elementUtils';
+import { getScalers } from '../../../Components/scalers';
+import { clampHorizontal } from '../../../Components/shapeUtils';
 
-export default function ButtonElement(props) {
+const DEFAULT_FONT_SIZE = 12;
 
-    const { buttonId, buttonDataIs, type, buttonPress } = props;
-    const dispatch = useDispatch();
-    const buttonIS = (buttonDataIs && buttonDataIs[buttonId]["button-colors"] !== undefined) && buttonDataIs[buttonId]["button-colors"]
-    useEffect(() => {
-        const newHeight = Number(buttonIS?.reSizeProperties?.y) + 100;
-        dispatch(updateHeight(newHeight));
-    }, [Number(buttonIS?.reSizeProperties?.y), dispatch]);
-    const parseFontSize = (fontSize) => {
-        if (typeof fontSize === 'string') {
-            return parseInt(fontSize.replace('px', ''), 10);
-        }
-        console.warn("Unexpected fontSize value:", fontSize);
-        return 12;
-    };
-    const fontSize = buttonIS?.fontSize ? parseFontSize(buttonIS?.fontSize) : 12;
-    const handleButton = () => {
-        const panelId = buttonIS?.panelId;
-        const pageId = buttonIS?.pageId?.id
-        if (panelId !== "") {
-            buttonPress && buttonPress(panelId ? panelId : 0,"panel")
-        }else{
-            buttonPress && buttonPress(pageId ? pageId : 0,"page")
-        }
+function ButtonElement({ buttonId, buttonDataIs, type, buttonPress }) {
+  const dispatch = useDispatch();
+  const { width: screenWidth } = useWindowDimensions();
+  const buttonIS = buttonDataIs?.[buttonId]?.['button-colors'];
+  const resize = buttonIS?.reSizeProperties;
+  const positionY = Number(resize?.y);
+  const panelId = buttonIS?.panelId;
+  const pageId = buttonIS?.pageId?.id;
+
+  useEffect(() => {
+    dispatch(updateHeight(positionY + 100));
+  }, [positionY, dispatch]);
+
+  const handlePress = useCallback(() => {
+    if (panelId) {
+      buttonPress?.(panelId, 'panel');
+    } else {
+      buttonPress?.(pageId ?? 0, 'page');
     }
+  }, [panelId, pageId, buttonPress]);
 
-    return (
-        <>
-            {
-                buttonIS
-                &&
-                <TouchableOpacity style={{   zIndex: buttonIS?.chartZindex}} onPress={() => handleButton()}>
-                    <View style={[styles.image,
-                    {   
-                        borderRadius: type === "panel" ? panelscaleWidth(parseInt(buttonIS?.borderRadius)) : scaleWidth(parseInt(buttonIS?.borderRadius)),
-                        zIndex: buttonIS?.chartZindex,
-                        alignItems:'center',
-                        justifyContent:'center',
-                        backgroundColor: buttonIS?.fontBgColor,
-                        width: type === "panel" ? panelscaleWidth(parseInt(buttonIS?.reSizeProperties?.width)) : scaleWidth(parseInt(buttonIS?.reSizeProperties?.width)),
-                        height: type === "panel" ? panelscaleHeight(parseInt(buttonIS?.reSizeProperties?.height)) : scaleHeight(parseInt(buttonIS?.reSizeProperties?.height)),
-                        left: type === "panel" ? panelscaleWidth(buttonIS?.reSizeProperties?.x +20) : scaleWidth(buttonIS?.reSizeProperties?.x),
-                        top: type === "panel" ? panelscaleHeight(Number(buttonIS?.reSizeProperties?.y)) : scaleHeight(Number(buttonIS?.reSizeProperties?.y)) }
-                    ]}>
-                        <Text style={{
-                            zIndex: buttonIS?.chartZindex,
-                            color: buttonIS?.fontColor,
-                            fontFamily: FONTS.SEGOEUISEMIBOLD,
-                            fontWeight: buttonIS?.isBold === true ? 'bold' : '500',
-                            fontSize: type === "panel"
-                                ? panelnormalizeFont(fontSize)
-                                : normalizeFont(fontSize),
-                            marginHorizontal: type === "panel" ? panelscaleWidth(6) : scaleWidth(5),
-                        }}>{buttonIS?.buttonTitle}</Text>
-                    </View>
-                </TouchableOpacity>
-            }
-        </>
-    )
+  const layout = useMemo(() => {
+    if (!resize) {
+      return null;
+    }
+    const { sw, sh } = getScalers(type);
+    const offsetX = type === 'panel' ? 20 : 0;
+    return clampHorizontal(
+      {
+        left: sw(Number(resize.x) + offsetX),
+        top: sh(Number(resize.y)),
+        width: sw(Number.parseInt(resize.width, 10)),
+        height: sh(Number.parseInt(resize.height, 10)),
+      },
+      screenWidth,
+    );
+  }, [resize, type, screenWidth]);
+
+  if (!buttonIS || !layout) {
+    return null;
+  }
+
+  const { sw, sf } = getScalers(type);
+  const fontSize = buttonIS.fontSize ? parseFontSize(buttonIS.fontSize) : DEFAULT_FONT_SIZE;
+
+  return (
+    <TouchableOpacity
+      onPress={handlePress}
+      style={[
+        styles.button,
+        layout,
+        {
+          borderRadius: sw(Number.parseInt(buttonIS.borderRadius, 10)),
+          backgroundColor: buttonIS.fontBgColor,
+          zIndex: buttonIS.chartZindex,
+        },
+      ]}
+    >
+      <Text
+        numberOfLines={1}
+        style={{
+          color: buttonIS.fontColor,
+          fontFamily: FONTS.SEGOEUISEMIBOLD,
+          fontWeight: buttonIS.isBold ? 'bold' : '500',
+          fontSize: sf(fontSize),
+          marginHorizontal: sw(type === 'panel' ? 6 : 5),
+        }}
+      >
+        {buttonIS.buttonTitle}
+      </Text>
+    </TouchableOpacity>
+  );
 }
 
+ButtonElement.propTypes = {
+  buttonId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
+  buttonDataIs: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
+  type: PropTypes.string,
+  buttonPress: PropTypes.func,
+};
+
+ButtonElement.defaultProps = {
+  buttonDataIs: undefined,
+  type: undefined,
+  buttonPress: undefined,
+};
+
+export default React.memo(ButtonElement);
+
 const styles = StyleSheet.create({
-    image: {
-        alignSelf: 'center',
-        position: 'absolute',
-    }
-})
+  button: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});

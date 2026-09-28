@@ -1,109 +1,93 @@
-import React, { useEffect, useMemo } from 'react';
-import { View, StyleSheet, PixelRatio, TouchableOpacity } from 'react-native';
-import { scaleHeight, scaleWidth } from '../../../Constants/dynamicSize';
-import { panelscaleHeight, panelscaleWidth } from '../../../Constants/panelSize';
-import { useDispatch } from 'react-redux';
-import { updateHeight } from '../../../Redux/ReduxSlice/mainSlice';
+import React, { useMemo } from 'react';
+import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { WebView } from 'react-native-webview';
+import PropTypes from 'prop-types';
+import { scaleHeight, scaleWidth } from '../../../Constants/dynamicSize';
+import { getShapeData, roundPx, clampHorizontal, hasRequiredLayout, } from '../../../Components/shapeUtils';
 
-const Arrow = (props) => {
-  const { id, arrowStylesIs, type } = props
-  const arrowStyles = arrowStylesIs[id]?.dataIs;
-  const dispatch = useDispatch();
-  useEffect(() => {
-    const newHeight = Number(arrowStyles?.position?.y) + Number(arrowStyles.height);
-    dispatch(updateHeight(newHeight));
-  }, [Number(arrowStyles?.position?.y), dispatch]);
+const ARROW_CLIP_PATH = 'polygon(0 39%, 74% 38%, 74% 0, 100% 50%, 73% 97%, 74% 58%, 0 59%)';
 
+const buildHtml = (color) => `
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+html, body { margin: 0; width: 100%; height: 100%; }
+.arrow {
+  width: 100%;
+  height: 100%;
+  clip-path: ${ARROW_CLIP_PATH};
+  background-color: ${color};
+}
+</style>
+</head>
+<body>
+<div class="arrow"></div>
+</body>
+</html>`;
 
-  const position = useMemo(() => ({
-    top: type === "panel" ? panelscaleHeight(PixelRatio.roundToNearestPixel(Number(arrowStyles?.position?.y))) : scaleHeight(PixelRatio.roundToNearestPixel(Number(arrowStyles?.position?.y))),
-    left: type === "panel" ? panelscaleWidth(PixelRatio.roundToNearestPixel(Number(arrowStyles?.position?.x))) : scaleWidth(PixelRatio.roundToNearestPixel(Number(arrowStyles?.position?.x)) - 5),
-    width: type === "panel" ? panelscaleWidth(arrowStyles?.width - 20) : scaleWidth(arrowStyles?.width),
-    height: type === "panel" ? panelscaleHeight(arrowStyles?.height) : scaleHeight(arrowStyles?.height),
-  }), [arrowStyles, type]);
+function Arrow({ id, arrowStylesIs, tabShape }) {
+  const { width: screenWidth } = useWindowDimensions();
+  const shape = getShapeData(arrowStylesIs, id, tabShape);
 
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <style>
-        body {
-          margin: 0;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-        }
-        .arrow {
-          width: ${type === "panel" ? panelscaleWidth(arrowStyles.width) : scaleWidth(arrowStyles.width)}px; 
-          height: ${type === "panel" ? panelscaleHeight(arrowStyles.height) : scaleHeight(arrowStyles.height)}px; 
-          clip-path: polygon(0 39%, 74% 38%, 74% 0, 100% 50%, 73% 97%, 74% 58%, 0 59%);
-          background-color: ${arrowStyles.SquareBg}; 
-          display: flex;
-          justify-content: right;
-          align-items: center;
-          
-        }
-      </style>
-    </head>
-    <body>
-      <div class="arrow"></div>
-    </body>
-    </html>
-  `;
+  const html = useMemo(() => buildHtml(shape?.SquareBg), [shape?.SquareBg]);
+
+  const containerStyle = useMemo(() => {
+    if (!hasRequiredLayout(shape)) {
+      return null;
+    }
+    const layout = clampHorizontal(
+      {
+        top: scaleHeight(roundPx(shape.position.y)),
+        left: scaleWidth(roundPx(Number(shape.position.x) - 5)),
+        width: scaleWidth(shape.width),
+        height: scaleHeight(shape.height),
+      },
+      screenWidth,
+      shape.rotation,
+    );
+    return { ...layout, transform: [{ rotate: `${shape.rotation}deg` }] };
+  }, [shape, screenWidth]);
+
+  if (!containerStyle) {
+    return null;
+  }
 
   return (
-    <>
-      {
-        arrowStyles?.position &&
-        arrowStyles?.width &&
-        arrowStyles?.height &&
-        arrowStyles?.SquareBg &&
-        arrowStyles?.rotation != null
-        &&
-        <TouchableOpacity disabled={true}>
-          <View style={{
-            ...position,
-            transform: [
-              { rotate: `${arrowStyles?.rotation}deg` },
-            ],
-            position: 'absolute'
-          }}>
-            <WebView
-              originWhitelist={['*']}
-              source={{ html: html }}
-              javaScriptEnabled={true}
-              domStorageEnabled={true}
-              startInLoadingState={true}
-              style={{ backgroundColor: 'transparent', flex: 1, }}
-              scrollEnabled={false}
-              scalesPageToFit={false}
-            />
-          </View>
-        </TouchableOpacity>
-      }
-    </>
-  )
+    <View style={[styles.arrowContainer, containerStyle]} pointerEvents="none">
+      <WebView
+        originWhitelist={['*']}
+        source={{ html }}
+        javaScriptEnabled
+        domStorageEnabled
+        startInLoadingState
+        style={styles.webView}
+        scrollEnabled={false}
+        scalesPageToFit={false}
+      />
+    </View>
+  );
 }
-export default Arrow
-const styles = StyleSheet.create({
-  image: {
-    alignSelf: 'center',
-    position: 'absolute'
-  },
-  arrow: {
-    width: 0,
-    height: 0,
-    backgroundColor: 'transparent',
-    borderStyle: 'solid',
-    borderTopColor: 'transparent',
-    borderBottomColor: 'transparent',
-    borderRightColor: 'transparent',
-  },
-  line: {
-    height: 1,
-    backgroundColor: 'black',
-    width: 20,
-  },
-})
 
+Arrow.propTypes = {
+  id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
+  arrowStylesIs: PropTypes.oneOfType([PropTypes.array, PropTypes.object]).isRequired,
+  tabShape: PropTypes.bool,
+};
+
+Arrow.defaultProps = {
+  tabShape: false,
+};
+
+export default React.memo(Arrow);
+
+const styles = StyleSheet.create({
+  arrowContainer: {
+    position: 'absolute',
+  },
+  webView: {
+    backgroundColor: 'transparent',
+    flex: 1,
+  },
+});

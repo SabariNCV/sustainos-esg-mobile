@@ -1,837 +1,371 @@
-import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-} from 'react-native';
-import axios from 'axios';
+import React, { useEffect, useMemo } from 'react';
+import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import CustomPlotly from '../../../Components/CustomPlotly';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Table, Row, Rows } from 'react-native-table-component';
-import { FONTS } from "../../../Constants/Fonts"
-import { updateHeight } from '../../../Redux/ReduxSlice/mainSlice';
+import PropTypes from 'prop-types';
+import { FONTS } from '../../../Constants/Fonts';
 import { COLORS } from '../../../Constants/Colors';
-import {
-  normalizeFont,
-  scaleHeight,
-  scaleWidth,
-} from '../../../Constants/dynamicSize';
-import { panelnormalizeFont, panelscaleHeight, panelscaleWidth } from '../../../Constants/panelSize';
+import { scaleHeight } from '../../../Constants/dynamicSize';
+import { updateHeight } from '../../../Redux/ReduxSlice/mainSlice';
+import { parseHeight, parseFontSize, evaluateColorRange } from '../../../Components/elementUtils';
+import { getScalers } from '../../../Components/scalers';
+import { clampHorizontal } from '../../../Components/shapeUtils';
+import { useParameterData } from '../../../Components/useParameterData';
+import { TrendChart, ValueLabel, ValueShape, ValueProgressBar, ProgressBarView } from '../../../Components/ParameterControls';
 
-const TableElement = (props) => {
-  const { tableId, type } = props;
-  const dispatch = useDispatch();
-  const tabledataToUpload = useSelector((state) => state.mainSlice.tableDataFromserver);
-  const BASE_URL = useSelector(state => state.mainSlice.baseUrlIs);
-  const [dbData, setDbdata] = useState([])
-  const tableIS = (tabledataToUpload[tableId] && tabledataToUpload[tableId]["table-colors"]) !== undefined && tabledataToUpload[tableId]["table-colors"]
-  const parseHeight = (value) => {
-    if (typeof value === 'string') {
-      return value.includes('px') ? parseFloat(value?.replace('px', '')) : parseFloat(value);
-    }
-    return value;
-  };
-  const WIDTHH = parseHeight(tableIS?.reSizeProperties?.width)
-  const HEIGHTT = parseHeight(tableIS?.reSizeProperties?.height)
+const EMPTY_LIST = [];
+const DEFAULT_TABLE_FONT_SIZE = 14;
+const TABLE_MARGIN = scaleHeight(20);
+const CHART_MODES = { 'Line Chart': 'line', 'Bar Chart': 'bar' };
 
-  useEffect(() => {
-    const newHeight = tableIS?.reSizeProperties?.y + HEIGHTT + 150;
-    dispatch(updateHeight(newHeight));
-  }, [])
+const toFontSize = (value) => (value ? parseFontSize(value) : DEFAULT_TABLE_FONT_SIZE);
 
-  useEffect(() => {
-    if (tableIS?.tableType === "dynamic" && tableIS?.dynamicTableData?.id !== undefined) {
-      let refreshTime = 0;
-      const refreshFreq = tableIS?.refreshFreq?.split(" ")
-      if (refreshFreq[1] === "Second") {
-        refreshTime = parseInt(refreshFreq[0]) * 1000
-      } else if (refreshFreq[1] === "Minute") {
-        refreshTime = parseInt(refreshFreq[0]) * 1000 * 60
-      } else if (refreshFreq[1] === "Hours") {
-        refreshTime = parseInt(refreshFreq[0]) * 1000 * 60 * 60
-      } else {
-        refreshTime = "None"
-      }
-      const fetchDataAndRenderWrapper = () => fetchDataAndRender();
-      fetchDataAndRenderWrapper();
-      if (refreshTime !== "None") {
-        const intervalId = setInterval(fetchDataAndRenderWrapper, refreshTime);
-        return () => clearInterval(intervalId);
-      }
-    } else {
-      setDbdata([])
-    }
-  }, [tableIS?.refreshFreq, tableIS?.dynamicTableData, tableIS?.timeRange])
+const buildLabels = (count, items, matchKey, nameKey, prefix) => Array.from(
+  { length: count },
+  (_, i) => items?.find((item) => item[matchKey] === i + 1)?.[nameKey] || `${prefix} ${i + 1}`,
+);
 
-  const fetchDataAndRender = async () => {
-    const paramData = tableIS;
-    const parametersId = paramData.dynamicTableData.parameterList ? paramData.dynamicTableData.parameterList.map((ele) => ele.id) : []
-    let url;
-    const token = await AsyncStorage.getItem('jwttoken');
-    if (paramData.timeRange === "custom") {
-      url = `${BASE_URL}dataservice_app/api/parameter_values/?id=${parametersId}&data_type=reports&from_date=${tableIS?.fromDate}&to_date=${tableIS?.toDate}`;
-    } else {
-      url = `${BASE_URL}dataservice_app/api/parameter_values/?id=${parametersId}&data_type=reports&time_frequency=${paramData.timeRange}`;
-    }
-    try {
-      const response = await axios.get(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const data = response?.data?.data
-
-      if (data) {
-        const processedData = Object.entries(data)?.map(([timestamp, values]) => ({
-          timestamp,
-          ...values
-        }));
-        setDbdata(processedData)
-      } else {
-        setDbdata([])
-      }
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    }
-  };
-
-  const filteredParam = tableIS?.dynamicTableData?.parameterList ? tableIS?.dynamicTableData.parameterList?.filter(ele => tableIS?.selectedParams?.includes(ele?.id)) : []
-
-  const combinedRows = Array.from({ length: tableIS?.numRows }, (_, i) => {
-    const customRow = tableIS?.rowsTable.find(row => row.rows === i + 1);
-    return customRow ? customRow.name : `Row ${i + 1}`;
-  });
-
-  const combinedColumns = Array.from({ length: tableIS?.numCols }, (_, i) => {
-    const customCol = tableIS?.columnstable.find(col => col.column === i + 1);
-    return customCol ? customCol.name : `Column ${i + 1}`;
-  });
-
-  const fixedRows = Array.from({ length: tableIS?.numRows }, (_, i) => {
-    const customRow = tableIS?.rowMappings.find(rowI => rowI.rowNo === i + 1);
-    return customRow ? customRow.row : `Row ${i + 1}`;
-  });
-
-  const fixedRowsmapping = Array.from({ length: tableIS?.numRows }, (_, i) => {
-    const customRow = tableIS?.rowMappings.find(rowI => rowI.rowNo === i + 1);
-    return customRow ? customRow : {};
-  });
-
-  function ColorFunction(ele, labelVal) {
-    let parmValueColor = "#000"
-    const updateColor = (ele) => {
-      switch (ele.condition) {
-        case "minMax":
-          if (parseFloat(labelVal) > parseFloat(ele.min) && parseFloat(labelVal) < parseFloat(ele.max)) {
-            parmValueColor = ele.color;
-          }
-          break;
-        case "greaterThan":
-          if (parseFloat(labelVal) > parseFloat(ele.max)) {
-            parmValueColor = ele.color;
-          }
-          break;
-        case "lessThan":
-          if (parseFloat(labelVal) < parseFloat(ele.max)) {
-            parmValueColor = ele.color;
-          }
-          break;
-        case "greaterThanEquall":
-          if (parseFloat(labelVal) >= parseFloat(ele.max)) {
-            parmValueColor = ele.color;
-          }
-          break;
-        case "lessThanEquall":
-          if (parseFloat(labelVal) <= parseFloat(ele.max)) {
-            parmValueColor = ele.color;
-          }
-          break;
-        default:
-          break;
-      }
-    };
-    ele.colorTable.map((ele) => updateColor(ele));
-    return parmValueColor
+const transformStaticData = (data, labels) => {
+  const keys = Object.keys(data ?? {}).map((key) => key.split('-').map((part) => Number.parseInt(part, 10)));
+  if (keys.length === 0) {
+    return [];
   }
-
-  function LineChartElement({ ele, tableIS, BASE_URL }) {
-    const [tracesIs, setTraces] = useState([])
-    useEffect(() => {
-      let refreshTime = 0;
-      const refreshFreq = tableIS?.refreshFreq.split(" ")
-      if (refreshFreq[1] === "Second") {
-        refreshTime = parseInt(refreshFreq[0]) * 1000
-      } else if (refreshFreq[1] === "Minute") {
-        refreshTime = parseInt(refreshFreq[0]) * 1000 * 60
-      } else if (refreshFreq[1] === "Hours") {
-        refreshTime = parseInt(refreshFreq[0]) * 1000 * 60 * 60
-      } else {
-        refreshTime = "None"
-      }
-      const fetchDataAndRenderWrapper = () => fetchDataAndRender(ele);
-      fetchDataAndRenderWrapper();
-      if (refreshTime !== "None") {
-        const intervalId = setInterval(fetchDataAndRenderWrapper, refreshTime);
-        return () => clearInterval(intervalId);
-      }
-    }, [ele])
-
-    const fetchDataAndRender = async (dataIs) => {
-      const paramData = tableIS;
-      let url;
-      if (paramData.timeRange === "custom") {
-        url = `${BASE_URL}dataservice_app/api/parameter_values/?id=${dataIs.id}&from_date=${dataIs.fromDate}&to_date=${dataIs.toDate}&data_type=line`;
-      } else {
-        url = `${BASE_URL}dataservice_app/api/parameter_values/?id=${dataIs.id}&data_type=line&time_frequency=${dataIs.timeRange}`;
-      }
-      try {
-        const token = await AsyncStorage.getItem('jwttoken');
-        const response = await axios.get(url, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const data = response.data.data;
-        if (data) {
-          const traces = [];
-          [dataIs.id].forEach((key, ind) => {
-            const trace = {
-              x: [],
-              y: [],
-              mode: 'lines',
-              "hoverinfo": 'none',
-              line: {
-                dash: 'solid',
-                width: 1.5,
-                color: dataIs.chartColor
-              }
-            };
-            Object.entries(data).forEach(([timestamp, values]) => {
-              const valueObj = values[dataIs.id];
-              trace.x.push(timestamp);
-              trace.y.push(valueObj || null);
-            });
-            traces.push(trace);
-          });
-          setTraces(traces);
-        } else {
-          setTraces([])
-        }
-
-      } catch (error) {
-      }
-    };
-
-    const layoutIs = {
-      margin: {
-        t: 0,
-        l: 0,
-        r: 0,
-        b: 0,
-      },
-      xaxis: {
-        showgrid: false,
-        zeroline: false,
-        showline: false,
-        showticklabels: false,
-      },
-      yaxis: {
-        showgrid: false,
-        zeroline: false,
-        showline: false,
-        showticklabels: false,
-      },
-      showlegend: false,
-    }
-
-    return (
-      <CustomPlotly
-        data={tracesIs}
-        layout={layoutIs}
-        style={{ width: "100%", height: type === "panel" ? panelscaleHeight(30) : scaleHeight(30) }}
-      />
-
-    );
-  }
-
-  function BarChartElement({ ele, tableIS, BASE_URL }) {
-    const [tracesIs, setTraces] = useState([])
-    useEffect(() => {
-      let refreshTime = 0;
-      const refreshFreq = tableIS?.refreshFreq.split(" ")
-      if (refreshFreq[1] === "Second") {
-        refreshTime = parseInt(refreshFreq[0]) * 1000
-      } else if (refreshFreq[1] === "Minute") {
-        refreshTime = parseInt(refreshFreq[0]) * 1000 * 60
-      } else if (refreshFreq[1] === "Hours") {
-        refreshTime = parseInt(refreshFreq[0]) * 1000 * 60 * 60
-      } else {
-        refreshTime = "None"
-      }
-      const fetchDataAndRenderWrapper = () => fetchDataAndRender(ele);
-      fetchDataAndRenderWrapper();
-      if (refreshTime !== "None") {
-        const intervalId = setInterval(fetchDataAndRenderWrapper, refreshTime);
-        return () => clearInterval(intervalId);
-      }
-    }, [ele])
-
-    const fetchDataAndRender = async (dataIs) => {
-      const paramData = tableIS;
-      let url;
-      if (paramData.timeRange === "custom") {
-        url = `${BASE_URL}dataservice_app/api/parameter_values/?id=${dataIs.id}&from_date=${dataIs.fromDate}&to_date=${dataIs.toDate}&data_type=bar`;
-      } else {
-        url = `${BASE_URL}dataservice_app/api/parameter_values/?id=${dataIs.id}&data_type=bar&time_frequency=${dataIs.timeRange}`;
-      }
-      try {
-        const token = await AsyncStorage.getItem('jwttoken');
-        const response = await axios.get(url, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const data = response.data.data;
-        if (data) {
-          const traces = [];
-          [dataIs.id].forEach((key, ind) => {
-            const trace = {
-              x: [],
-              y: [],
-              type: 'bar',
-              orientation: "v",
-              "hoverinfo": 'none',
-              marker: {
-                color: dataIs.chartColor
-              },
-            };
-            Object.entries(data).forEach(([timestamp, values]) => {
-              const valueObj = values[dataIs.id];
-              trace.x.push(timestamp);
-              trace.y.push(valueObj || null);
-            });
-            traces.push(trace);
-          });
-          setTraces(traces);
-        } else {
-          setTraces([])
-        }
-
-      } catch (error) {
-      }
-    };
-
-    const layoutIs = {
-      margin: {
-        t: 0,
-        l: 0,
-        r: 0,
-        b: 0,
-      },
-      xaxis: {
-        showgrid: false,
-        zeroline: false,
-        showline: false,
-        showticklabels: false,
-      },
-      yaxis: {
-        showgrid: false,
-        zeroline: false,
-        showline: false,
-        showticklabels: false,
-      },
-      showlegend: false,
-    }
-
-    return (
-      <CustomPlotly
-        data={tracesIs}
-        layout={layoutIs}
-        style={{ width: "100%", height: type === "panel" ? panelscaleHeight(30) : scaleHeight(30) }}
-      />
-    );
-  }
-
-  function StaticLabelElement({ ele, tableIS, BASE_URL }) {
-    const [labelVal, setLableVal] = useState("")
-    useEffect(() => {
-      let refreshTime = 0;
-      const refreshFreq = tableIS?.refreshFreq.split(" ")
-      if (refreshFreq[1] === "Second") {
-        refreshTime = parseInt(refreshFreq[0]) * 1000
-      } else if (refreshFreq[1] === "Minute") {
-        refreshTime = parseInt(refreshFreq[0]) * 1000 * 60
-      } else if (refreshFreq[1] === "Hours") {
-        refreshTime = parseInt(refreshFreq[0]) * 1000 * 60 * 60
-      } else {
-        refreshTime = "None"
-      }
-      const fetchDataAndRenderWrapper = () => fetchDataAndRender(ele);
-      fetchDataAndRenderWrapper();
-      if (refreshTime !== "None") {
-        const intervalId = setInterval(fetchDataAndRenderWrapper, refreshTime);
-        return () => clearInterval(intervalId);
-      }
-    }, [ele])
-    const fetchDataAndRender = async (data) => {
-      const paramData = tableIS;
-      let url;
-      if (paramData.timeRange === "custom") {
-        url = `${BASE_URL}dataservice_app/api/parameter_values/?id=${data.id}&from_date=${data.fromDate}&to_date=${data.toDate}&aggregation_type=${data.aggregate}`;
-      } else {
-        url = `${BASE_URL}dataservice_app/api/parameter_values/?id=${data.id}&time_frequency=${data.timeRange}&aggregation_type=${data.aggregate}`;
-      }
-      try {
-        const token = await AsyncStorage.getItem('jwttoken');
-        const response = await axios.get(url, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const data = response.data.data;
-        if (data) {
-          setLableVal(data[ele.id].toFixed(ele.decimalValue))
-        } else {
-          setLableVal("")
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
-    const parmValueColor = ColorFunction(ele, labelVal)
-    return (
-      <Text style={{ fontSize: type === "panel" ? panelnormalizeFont(14) : normalizeFont(14), textAlign: 'center', color: parmValueColor, fontFamily: FONTS.SEGOEUISEMIBOLD }}>
-        {labelVal}
-      </Text>
-    );
-  }
-
-  function StaticSquareElement({ ele, tableIS, BASE_URL }) {
-    const [paramValue, setParamValue] = useState("")
-    useEffect(() => {
-      let refreshTime = 0;
-      const refreshFreq = tableIS?.refreshFreq.split(" ")
-      if (refreshFreq[1] === "Second") {
-        refreshTime = parseInt(refreshFreq[0]) * 1000
-      } else if (refreshFreq[1] === "Minute") {
-        refreshTime = parseInt(refreshFreq[0]) * 1000 * 60
-      } else if (refreshFreq[1] === "Hours") {
-        refreshTime = parseInt(refreshFreq[0]) * 1000 * 60 * 60
-      } else {
-        refreshTime = "None"
-      }
-      const fetchDataAndRenderWrapper = () => fetchDataAndRender(ele);
-      fetchDataAndRenderWrapper();
-      if (refreshTime !== "None") {
-        const intervalId = setInterval(fetchDataAndRenderWrapper, refreshTime);
-        return () => clearInterval(intervalId);
-      }
-    }, [ele])
-
-    const fetchDataAndRender = async (dataIs) => {
-      const paramData = tableIS;
-      let url;
-      if (paramData.timeRange === "custom") {
-        url = `${BASE_URL}dataservice_app/api/parameter_values/?id=${dataIs.id}&from_date=${dataIs.fromDate}&to_date=${dataIs.toDate}&aggregation_type=${dataIs.aggregate}`;
-      } else {
-        url = `${BASE_URL}dataservice_app/api/parameter_values/?id=${dataIs.id}&time_frequency=${dataIs.timeRange}&aggregation_type=${dataIs.aggregate}`;
-      }
-      try {
-        const token = await AsyncStorage.getItem('jwttoken');
-        const response = await axios.get(url, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const data = response.data.data;
-        if (data) {
-          setParamValue(data[ele.id])
-        } else {
-          setParamValue("")
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
-    const parmValueColor = ColorFunction(ele, paramValue)
-
-    return (
-      <View style={{ width: type === "panel" ? panelscaleWidth(Number(ele.shapeSize)) : scaleWidth(Number(ele.shapeSize)), height: type === "panel" ? panelscaleHeight(Number(ele.shapeSize)) : scaleHeight(Number(ele.shapeSize)), backgroundColor: parmValueColor }}></View>
-    );
-  }
-
-  function StaticCircleElement({ ele, tableIS, BASE_URL }) {
-    const [paramValue, setParamValue] = useState("")
-    useEffect(() => {
-      let refreshTime = 0;
-      const refreshFreq = tableIS?.refreshFreq.split(" ")
-      if (refreshFreq[1] === "Second") {
-        refreshTime = parseInt(refreshFreq[0]) * 1000
-      } else if (refreshFreq[1] === "Minute") {
-        refreshTime = parseInt(refreshFreq[0]) * 1000 * 60
-      } else if (refreshFreq[1] === "Hours") {
-        refreshTime = parseInt(refreshFreq[0]) * 1000 * 60 * 60
-      } else {
-        refreshTime = "None"
-      }
-      const fetchDataAndRenderWrapper = () => fetchDataAndRender(ele);
-      fetchDataAndRenderWrapper();
-      if (refreshTime !== "None") {
-        const intervalId = setInterval(fetchDataAndRenderWrapper, refreshTime);
-        return () => clearInterval(intervalId);
-      }
-    }, [ele])
-
-    const fetchDataAndRender = async (dataIs) => {
-      const paramData = tableIS;
-      let url;
-      if (paramData.timeRange === "custom") {
-        url = `${BASE_URL}dataservice_app/api/parameter_values/?id=${dataIs.id}&from_date=${dataIs.fromDate}&to_date=${dataIs.toDate}&aggregation_type=${dataIs.aggregate}`;
-      } else {
-        url = `${BASE_URL}dataservice_app/api/parameter_values/?id=${dataIs.id}&time_frequency=${dataIs.timeRange}&aggregation_type=${dataIs.aggregate}`;
-      }
-      try {
-        const token = await AsyncStorage.getItem('jwttoken');
-        const response = await axios.get(url, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const data = response.data.data;
-        if (data) {
-          setParamValue(data[ele.id])
-        } else {
-          setParamValue("")
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
-    const parmValueColor = ColorFunction(ele, paramValue)
-
-    return (
-      <View style={{ width: ele.shapeSize,alignSelf:'center', height: ele.shapeSize, backgroundColor: parmValueColor, borderRadius: ele.shapeSize / 2 }}>
-      </View>
-    );
-  }
-
-  function StaticProgressBarElement({ ele, tableIS, BASE_URL }) {
-    const [labelParamValue, setlabelParmValue] = useState("")
-    const [progress, setProgress] = useState(0)
-    useEffect(() => {
-      let refreshTime = 0;
-      const refreshFreq = tableIS?.refreshFreq.split(" ")
-      if (refreshFreq[1] === "Second") {
-        refreshTime = parseInt(refreshFreq[0]) * 1000
-      } else if (refreshFreq[1] === "Minute") {
-        refreshTime = parseInt(refreshFreq[0]) * 1000 * 60
-      } else if (refreshFreq[1] === "Hours") {
-        refreshTime = parseInt(refreshFreq[0]) * 1000 * 60 * 60
-      } else {
-        refreshTime = "None"
-      }
-      const fetchDataAndRenderWrapper = () => fetchDataAndRender(ele);
-      fetchDataAndRenderWrapper();
-      if (refreshTime !== "None") {
-        const intervalId = setInterval(fetchDataAndRenderWrapper, refreshTime);
-        return () => clearInterval(intervalId);
-      }
-    }, [ele.maxVal, ele.minVal, ele])
-
-    const fetchDataAndRender = async (dataIs) => {
-      const paramData = tableIS;
-      let url;
-      if (paramData.timeRange === "custom") {
-        url = `${BASE_URL}dataservice_app/api/parameter_values/?id=${dataIs.id}&from_date=${dataIs.fromDate}&to_date=${dataIs.toDate}&aggregation_type=${dataIs.aggregate}`;
-      } else {
-        url = `${BASE_URL}dataservice_app/api/parameter_values/?id=${dataIs.id}&time_frequency=${dataIs.timeRange}&aggregation_type=${dataIs.aggregate}`;
-      }
-      try {
-        const token = await AsyncStorage.getItem('jwttoken');
-        const response = await axios.get(url, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const data = response.data.data;
-        if (data) {
-          const value = data[ele.id]
-          setlabelParmValue(value)
-          const maxValue = parseInt(ele.maxVal)
-          const minValue = parseInt(ele.minVal)
-          if (value >= maxValue) {
-            setProgress(100)
-          } else if (value <= minValue) {
-            setProgress(0)
-          } else {
-            const valueIs = (100 * value) / maxValue
-            setProgress(valueIs)
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
-    const parmValueColor = ColorFunction(ele, labelParamValue)
-
-    return (
-      <View >
-        <Text style={{ fontSize: type === "panel" ? panelnormalizeFont(12) : normalizeFont(12), color: "#fff", marginRight: 8, position: "absolute", zIndex: 1, height: 20 }}>
-          {labelParamValue}
-        </Text>
-        <View
-          style={{ width: "90%", height: type === "panel" ? panelscaleHeight(20) : scaleHeight(20), backgroundColor: "#808080", borderRadius: 5, margin: 4 }}
-        >
-          <View
-            style={{ width: `${progress}%`, backgroundColor: parmValueColor, borderRadius: 5 }} >
-          </View>
-        </View>
-      </View>
-    );
-  }
-
-  const tableData = fixedRows.map((rowName, i) => {
-    const selectedParams = fixedRowsmapping[i]?.selectedParams || [];
-    const paramList = fixedRowsmapping[i]?.parameterList || [];
-    const paramData = paramList.filter(ele => selectedParams.includes(ele.id));
-    const rowComponents = paramData.map((param, j) => {
-      switch (param.controlType) {
-        case "Numeric":
-          return <StaticLabelElement key={j} ele={param} tableIS={tableIS} BASE_URL={BASE_URL} />;
-        case "Line Chart":
-          return <LineChartElement key={j} ele={param} tableIS={tableIS} BASE_URL={BASE_URL} />;
-        case "Bar Chart":
-          return <BarChartElement key={j} ele={param} tableIS={tableIS} BASE_URL={BASE_URL} />;
-        case "Square":
-          return <StaticSquareElement key={j} ele={param} tableIS={tableIS} BASE_URL={BASE_URL} />;
-        case "Circle":
-          return <StaticCircleElement key={j} ele={param} tableIS={tableIS} BASE_URL={BASE_URL} />;
-        case "Progress Bar":
-          return <StaticProgressBarElement key={j} ele={param} tableIS={tableIS} BASE_URL={BASE_URL} />;
-        default:
-          return null;
-      }
-    });
-
-    return [rowName, ...rowComponents];
-  });
-
-  const StaticFixedTable = () => {
-    const transformData = (data, combinedColumns) => {
-      const rows = [];
-      const numRows = Math.max(...Object.keys(data).map(key => parseInt(key.split('-')[0]))) + 1;
-      const numCols = Math.max(...Object.keys(data).map(key => parseInt(key.split('-')[1]))) + 1;
-      const firstColumnData = combinedColumns;
-      for (let row = 0; row < numRows; row++) {
-        const rowData = [firstColumnData[row] || ''];
-        for (let col = 0; col < numCols; col++) {
-          const key = `${row}-${col}`;
-          rowData.push(data[key] || '');
-        }
-        rows.push(rowData);
-      }
-      return rows;
-    };
-
-    const newtableData = transformData(tableIS?.staticTableData, combinedRows);
-    const newRowData = [
-      statictableHead,
-      ...newtableData
-    ];
-    const Number = parseInt(tableIS?.numRows) + 2.5;
-
-    // Dynamically create the styles for header and rows
-    const headerTextStyle = {
-      ...styles.text,
-      fontSize: type === "panel"
-        ? panelnormalizeFont(parseFloat(tableIS?.hFontSize?.replace('px', '')))
-        : normalizeFont(parseFloat(tableIS?.hFontSize?.replace('px', '')))
-    };
-
-    const rowTextStyle = {
-      ...styles.text,
-      fontSize: type === "panel"
-        ? panelnormalizeFont(parseFloat(tableIS?.hFontSize?.replace('px', '')))
-        : normalizeFont(parseFloat(tableIS?.dFontSize?.replace('px', '')))
-    };
-
-    // Ensure that textStyle is always an object and not an array
-    const normalizedHeaderTextStyle = Array.isArray(headerTextStyle) ? headerTextStyle[0] : headerTextStyle;
-    const normalizedRowTextStyle = Array.isArray(rowTextStyle) ? rowTextStyle[0] : rowTextStyle;
-
-    return (
-      <>
-        <Table borderStyle={styles.tableBorder}>
-          <Row
-            data={newRowData[0]}
-            style={{
-              ...styles.head,
-              height: type === "panel" ? panelscaleHeight(HEIGHTT / Number) : HEIGHTT / Number,
-              backgroundColor: tableIS?.headerColor
-            }}
-            textStyle={normalizedHeaderTextStyle}
-          />
-          {newRowData.slice(1).map((rowData, index) => (
-            <Row
-              key={index}
-              data={rowData}
-              style={{
-                ...styles.row,
-                height: type === "panel" ? panelscaleHeight(HEIGHTT / Number) : HEIGHTT / Number,
-                backgroundColor: index % 2 === 0
-                  && tableIS?.banderRowColor ? tableIS?.banderRowColor : 'transparent'                             // Odd rows (or any other color)
-              }}
-              textStyle={normalizedRowTextStyle}
-            />
-          ))}
-        </Table>
-      </>
-    );
-  };
-
-
-  function LabelElement({ ele, value }) {
-    const parmValueColor = ColorFunction(ele, value)
-    return (
-      <View >
-        <Text style={{ alignSelf: 'center', color: parmValueColor, margin: 0, fontFamily: FONTS.SEGOEUISEMIBOLD, fontSize: type === "panel" ? panelnormalizeFont(14) : normalizeFont(14) }}>
-          {value}
-        </Text>
-      </View>
-    );
-  }
-
-  function SquareElement({ ele, value }) {
-    const parmValueColor = ColorFunction(ele, value)
-    return (
-      <View
-        style={{ width: ele.shapeSize, height: ele.shapeSize, backgroundColor: parmValueColor }}
-      >
-      </View>
-    );
-  }
-
-  function CircleElement({ ele, value }) {
-    const parmValueColor = ColorFunction(ele, value)
-    return (
-      <View
-        style={{ width: ele.shapeSize, height: ele.shapeSize, backgroundColor: parmValueColor, borderRadius: ele.shapeSize / 2,alignSelf:'center' }}
-      ></View>
-    );
-  }
-
-  function ProgressBarElement({ ele, value }) {
-    const [progress, setProgress] = useState(0)
-    const maxValue = parseInt(ele.maxVal)
-    const minValue = parseInt(ele.minVal)
-    useEffect(() => {
-      if (value >= maxValue) {
-        setProgress(100)
-      } else if (value <= minValue) {
-        setProgress(0)
-      } else {
-        const valueIs = (100 * value) / maxValue
-        setProgress(valueIs)
-      }
-    }, [ele.maxVal, ele.minVal])
-    const parmValueColor = ColorFunction(ele, value)
-
-    return (
-      <View style={{ width: type === "panel" ? panelscaleWidth(WIDTHH / dynamictableHead?.length) : WIDTHH / dynamictableHead?.length }}>
-        <Text style={{ color: "#fff", fontSize: type === "panel" ? panelnormalizeFont(tableIS?.dFontSize) : normalizeFont(tableIS?.dFontSize), margin: 8, position: "absolute", zIndex: 1, height: type === "panel" ? panelscaleHeight(20) : scaleHeight(20) }}>
-          {value}
-        </Text>
-        <View style={{ width: "90%", height: type === "panel" ? panelscaleHeight(20) : scaleHeight(20), backgroundColor: "#808080", borderRadius: type === "panel" ? panelscaleHeight(5) : scaleHeight(5), margin: type === "panel" ? panelscaleHeight(4) : scaleHeight(4) }}>
-          <View
-            style={{ width: `${progress}%`, backgroundColor: 'parmValueColor', height: type === "panel" ? panelscaleHeight(5) : scaleHeight(5) }} >
-          </View>
-        </View>
-      </View>
-    );
-  }
-
-  const renderElement = (header, value) => {
-    switch (header.controlType) {
-      case 'Numeric':
-        return <LabelElement ele={header} value={value} />;
-      case 'Square':
-        return <SquareElement ele={header} value={value} />;
-      case 'Circle':
-        return <CircleElement ele={header} value={value} />;
-      case 'Progress Bar':
-        return <ProgressBarElement ele={header} value={value} />;
-      default:
-        return null;
-    }
-  };
-
-  const tableData1 = dbData.map(row => [
-    row.timestamp,
-    ...filteredParam.map(header => renderElement(header, row[header.id])),
+  const numRows = Math.max(...keys.map(([row]) => row)) + 1;
+  const numCols = Math.max(...keys.map(([, col]) => col)) + 1;
+  return Array.from({ length: numRows }, (_, row) => [
+    labels[row] || '',
+    ...Array.from({ length: numCols }, (__, col) => data[`${row}-${col}`] || ''),
   ]);
-
-  const dynamictableHead = [tableIS?.tableName, ...filteredParam.map(ele => ele.newname || ele.global_code)];
-  const statictableHead = [tableIS?.tableName, ...combinedColumns];
-  //console.log("helloworld", JSON.stringify(tableIS))
-  return (
-    <View style={[styles.tableContainer, {
-      width: type === "panel" ? panelscaleWidth(WIDTHH) : scaleWidth(WIDTHH),
-      height: type === "panel" ? panelscaleHeight(HEIGHTT) : scaleHeight(HEIGHTT),
-      position: 'absolute',
-      top: type === "panel" ? panelscaleHeight(tableIS?.reSizeProperties?.y - 30) : scaleHeight(tableIS?.reSizeProperties?.y - 30),
-      left: type === "panel" ? panelscaleWidth(tableIS?.reSizeProperties?.x) : scaleWidth(tableIS?.reSizeProperties?.x),
-    }]}>
-
-      {tableIS?.staticTable &&
-        <View style={{ backgroundColor: tableIS?.bgCh ? tableIS?.backgroundColor : "#fff", }}>
-          <StaticFixedTable />
-        </View>
-      }
-
-      {(tableIS?.tableType === "static" && !tableIS?.staticTable) &&
-        <View style={{ backgroundColor: tableIS?.bgCh ? tableIS?.backgroundColor : "#fff" }}>
-          <Table borderStyle={{ borderColor: '#000' }}>
-            <Row data={statictableHead} style={StyleSheet.flatten([styles.head, { height: type === "panel" ? panelscaleHeight(HEIGHTT / 3) : HEIGHTT / 3, backgroundColor: tableIS?.headerColor }])}
-              textStyle={StyleSheet.flatten([styles.text, { fontSize: type === "panel" ? panelnormalizeFont(parseFloat(tableIS?.hFontSize?.replace('px', ''))) : normalizeFont(parseFloat(tableIS?.hFontSize?.replace('px', ''))) }])} />
-            <Rows data={tableData} style={StyleSheet.flatten([styles.head, { height: type === "panel" ? panelscaleHeight(HEIGHTT / 3) : HEIGHTT / 3, backgroundColor: tableIS?.headerColor }])} textStyle={StyleSheet.flatten([styles.text, { fontSize: normalizeFont(parseFloat(tableIS?.hFontSize?.replace('px', ''))) }])} />
-          </Table>
-        </View>
-      }
-
-      {tableIS?.tableType === "dynamic" &&
-        <View style={{ backgroundColor: tableIS?.bgCh ? tableIS?.backgroundColor : "#fff", }}>
-          <Table borderStyle={styles.border}>
-            <Row data={dynamictableHead} style={StyleSheet.flatten([styles.head, { height: type === "panel" ? panelscaleHeight(40) : scaleHeight(40), backgroundColor: tableIS?.headerColor }])}
-              textStyle={StyleSheet.flatten([styles.text, { fontSize: type === "panel" ? panelnormalizeFont(parseFloat(tableIS?.hFontSize?.replace('px', ''))) : normalizeFont(parseFloat(tableIS?.hFontSize?.replace('px', ''))) }])} />
-            {tableData1.map((rowData, index) => (
-              <Row key={index} data={rowData} style={StyleSheet.flatten([styles.head, { backgroundColor: tableIS?.headerColor }])} textStyle={StyleSheet.flatten([styles.text, { fontSize: type === "panel" ? panelnormalizeFont(parseFloat(tableIS?.hFontSize?.replace('px', ''))) : normalizeFont(parseFloat(tableIS?.hFontSize?.replace('px', ''))) }])} />
-            ))}
-          </Table>
-        </View>}
-
-    </View>
-  );
 };
 
-export default TableElement;
+function StaticControl({ param, baseUrl, refreshFreq, scalers }) {
+  const { sw, sh, sf } = scalers;
+  const size = Number(param.shapeSize);
+  const chartMode = CHART_MODES[param.controlType];
+
+  if (chartMode) {
+    return (
+      <TrendChart
+        ele={param}
+        baseUrl={baseUrl}
+        refreshFreq={refreshFreq}
+        mode={chartMode}
+        style={{ width: '100%', height: sh(30) }}
+      />
+    );
+  }
+
+  switch (param.controlType) {
+    case 'Numeric':
+      return (
+        <ValueLabel
+          ele={param}
+          baseUrl={baseUrl}
+          refreshFreq={refreshFreq}
+          textStyle={{ fontSize: sf(14), textAlign: 'center', fontFamily: FONTS.SEGOEUISEMIBOLD }}
+        />
+      );
+    case 'Square':
+      return (
+        <ValueShape
+          ele={param}
+          baseUrl={baseUrl}
+          refreshFreq={refreshFreq}
+          style={{ width: sw(size), height: sh(size) }}
+        />
+      );
+    case 'Circle':
+      return (
+        <ValueShape
+          ele={param}
+          baseUrl={baseUrl}
+          refreshFreq={refreshFreq}
+          style={{ width: size, height: size, borderRadius: size / 2, alignSelf: 'center' }}
+        />
+      );
+    case 'Progress Bar':
+      return (
+        <ValueProgressBar
+          ele={param}
+          baseUrl={baseUrl}
+          refreshFreq={refreshFreq}
+          labelStyle={[styles.progressLabel, { fontSize: sf(12) }]}
+          trackStyle={[styles.progressTrack, { height: sh(20) }]}
+        />
+      );
+    default:
+      return null;
+  }
+}
+
+StaticControl.propTypes = {
+  param: PropTypes.shape({ controlType: PropTypes.string, shapeSize: PropTypes.oneOfType([PropTypes.number, PropTypes.string]) }).isRequired,
+  baseUrl: PropTypes.string,
+  refreshFreq: PropTypes.string,
+  scalers: PropTypes.shape({ sw: PropTypes.func, sh: PropTypes.func, sf: PropTypes.func }).isRequired,
+};
+
+function DynamicCell({ header, value, scalers }) {
+  const { sh, sf } = scalers;
+  const color = evaluateColorRange(header.colorTable, value);
+  const size = Number(header.shapeSize);
+
+  switch (header.controlType) {
+    case 'Numeric':
+      return (
+        <Text style={[styles.numericCell, { color, fontSize: sf(14) }]}>{value}</Text>
+      );
+    case 'Square':
+      return <View style={{ width: size, height: size, backgroundColor: color }} />;
+    case 'Circle':
+      return (
+        <View
+          style={{
+            width: size,
+            height: size,
+            backgroundColor: color,
+            borderRadius: size / 2,
+            alignSelf: 'center',
+          }}
+        />
+      );
+    case 'Progress Bar':
+      return (
+        <ProgressBarView
+          value={value}
+          ele={header}
+          color={color}
+          labelStyle={[styles.progressLabel, { fontSize: sf(12), height: sh(20) }]}
+          trackStyle={[styles.progressTrack, { height: sh(20) }]}
+        />
+      );
+    default:
+      return null;
+  }
+}
+
+DynamicCell.propTypes = {
+  header: PropTypes.shape({ controlType: PropTypes.string, shapeSize: PropTypes.oneOfType([PropTypes.number, PropTypes.string]) }).isRequired,
+  value: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+  scalers: PropTypes.shape({ sh: PropTypes.func, sf: PropTypes.func }).isRequired,
+};
+
+DynamicCell.defaultProps = {
+  value: '',
+};
+
+function StaticFixedTable({ tableIS, tableHeight, scalers, rowLabels, head }) {
+  const { sh, sf } = scalers;
+  const rows = useMemo(() => transformStaticData(tableIS.staticTableData, rowLabels), [tableIS.staticTableData, rowLabels]);
+  const rowHeight = sh(tableHeight / (Number.parseInt(tableIS.numRows, 10) + 2.5));
+  const headerTextStyle = [styles.text, { fontSize: sf(toFontSize(tableIS.hFontSize)) }];
+  const rowTextStyle = [styles.text, { fontSize: sf(toFontSize(tableIS.dFontSize)) }];
+
+  return (
+    <Table borderStyle={styles.tableBorder}>
+      <Row
+        data={head}
+        style={[styles.head, { height: rowHeight, backgroundColor: tableIS.headerColor }]}
+        textStyle={headerTextStyle}
+      />
+      {rows.map((rowData, rowIndex) => (
+        <Row
+          key={rowData[0] || `row-${rowData.length}`}
+          data={rowData}
+          style={[
+            styles.row,
+            {
+              height: rowHeight,
+              backgroundColor: rowIndex % 2 === 0 && tableIS.banderRowColor ? tableIS.banderRowColor : 'transparent',
+            },
+          ]}
+          textStyle={rowTextStyle}
+        />
+      ))}
+    </Table>
+  );
+}
+
+StaticFixedTable.propTypes = {
+  tableIS: PropTypes.shape({ numRows: PropTypes.oneOfType([PropTypes.number, PropTypes.string]) }).isRequired,
+  tableHeight: PropTypes.number.isRequired,
+  scalers: PropTypes.shape({ sh: PropTypes.func, sf: PropTypes.func }).isRequired,
+  rowLabels: PropTypes.arrayOf(PropTypes.string).isRequired,
+  head: PropTypes.arrayOf(PropTypes.string).isRequired,
+};
+
+function TableElement({ tableId, type }) {
+  const dispatch = useDispatch();
+  const { width: screenWidth } = useWindowDimensions();
+  const tableDataFromServer = useSelector((state) => state.mainSlice.tableDataFromserver);
+  const baseUrl = useSelector((state) => state.mainSlice.baseUrlIs);
+  const tableIS = tableDataFromServer[tableId]?.['table-colors'];
+  const scalers = getScalers(type);
+  const { sw, sh, sf } = scalers;
+
+  const resize = tableIS?.reSizeProperties;
+  const tableWidth = parseHeight(resize?.width);
+  const tableHeight = parseHeight(resize?.height);
+  const positionX = Number(resize?.x);
+  const positionY = Number(resize?.y);
+
+  useEffect(() => {
+    dispatch(updateHeight(positionY + tableHeight + 150));
+  }, [positionY, tableHeight, dispatch]);
+
+  const dynamicSource = useMemo(() => {
+    if (tableIS?.tableType !== 'dynamic' || tableIS.dynamicTableData?.id === undefined) {
+      return null;
+    }
+    const ids = (tableIS.dynamicTableData.parameterList ?? EMPTY_LIST).map((ele) => ele.id);
+    return {
+      id: ids.join(','),
+      timeRange: tableIS.timeRange,
+      fromDate: tableIS.fromDate,
+      toDate: tableIS.toDate,
+    };
+  }, [tableIS]);
+
+  const dynamicData = useParameterData(baseUrl, dynamicSource, 'reports', tableIS?.refreshFreq);
+
+  const dbData = useMemo(
+    () => (dynamicData ? Object.entries(dynamicData).map(([timestamp, values]) => ({ timestamp, ...values })) : EMPTY_LIST),
+    [dynamicData],
+  );
+
+  const numRows = tableIS?.numRows ?? 0;
+  const numCols = tableIS?.numCols ?? 0;
+
+  const rowLabels = useMemo(
+    () => buildLabels(numRows, tableIS?.rowsTable, 'rows', 'name', 'Row'),
+    [numRows, tableIS?.rowsTable],
+  );
+  const columnLabels = useMemo(
+    () => buildLabels(numCols, tableIS?.columnstable, 'column', 'name', 'Column'),
+    [numCols, tableIS?.columnstable],
+  );
+  const fixedRowNames = useMemo(
+    () => buildLabels(numRows, tableIS?.rowMappings, 'rowNo', 'row', 'Row'),
+    [numRows, tableIS?.rowMappings],
+  );
+
+  const filteredParams = useMemo(
+    () => (tableIS?.dynamicTableData?.parameterList ?? EMPTY_LIST).filter((ele) => tableIS?.selectedParams?.includes(ele?.id)),
+    [tableIS?.dynamicTableData?.parameterList, tableIS?.selectedParams],
+  );
+
+  const containerStyle = useMemo(
+    () => clampHorizontal(
+      {
+        top: sh(positionY - 30) + TABLE_MARGIN,
+        left: sw(positionX) + TABLE_MARGIN,
+        width: sw(tableWidth),
+        height: sh(tableHeight),
+      },
+      screenWidth,
+    ),
+    [sw, sh, positionX, positionY, tableWidth, tableHeight, screenWidth],
+  );
+
+  if (!tableIS) {
+    return null;
+  }
+
+  const headerFontSize = toFontSize(tableIS.hFontSize);
+  const backgroundColor = tableIS.bgCh ? tableIS.backgroundColor : '#fff';
+  const staticHead = [tableIS.tableName, ...columnLabels];
+  const dynamicHead = [tableIS.tableName, ...filteredParams.map((ele) => ele.newname || ele.global_code)];
+  const headerTextStyle = [styles.text, { fontSize: sf(headerFontSize) }];
+  const thirdHeight = sh(tableHeight / 3);
+
+  const staticTableRows = fixedRowNames.map((rowName, rowIndex) => {
+    const mapping = tableIS.rowMappings?.find((item) => item.rowNo === rowIndex + 1);
+    const selected = mapping?.selectedParams ?? EMPTY_LIST;
+    const params = (mapping?.parameterList ?? EMPTY_LIST).filter((ele) => selected.includes(ele.id));
+    return [
+      rowName,
+      ...params.map((param) => (
+        <StaticControl
+          key={param.id}
+          param={param}
+          baseUrl={baseUrl}
+          refreshFreq={tableIS.refreshFreq}
+          scalers={scalers}
+        />
+      )),
+    ];
+  });
+
+  return (
+    <View style={[styles.container, containerStyle]}>
+      <View style={{ backgroundColor }}>
+        {tableIS.staticTable ? (
+          <StaticFixedTable
+            tableIS={tableIS}
+            tableHeight={tableHeight}
+            scalers={scalers}
+            rowLabels={rowLabels}
+            head={staticHead}
+          />
+        ) : null}
+
+        {tableIS.tableType === 'static' && !tableIS.staticTable ? (
+          <Table borderStyle={styles.staticBorder}>
+            <Row
+              data={staticHead}
+              style={[styles.head, { height: thirdHeight, backgroundColor: tableIS.headerColor }]}
+              textStyle={headerTextStyle}
+            />
+            <Rows
+              data={staticTableRows}
+              style={[styles.head, { height: thirdHeight, backgroundColor: tableIS.headerColor }]}
+              textStyle={headerTextStyle}
+            />
+          </Table>
+        ) : null}
+
+        {tableIS.tableType === 'dynamic' ? (
+          <Table borderStyle={styles.border}>
+            <Row
+              data={dynamicHead}
+              style={[styles.head, { height: sh(40), backgroundColor: tableIS.headerColor }]}
+              textStyle={headerTextStyle}
+            />
+            {dbData.map((row) => (
+              <Row
+                key={row.timestamp}
+                data={[
+                  row.timestamp,
+                  ...filteredParams.map((header) => (
+                    <DynamicCell key={header.id} header={header} value={row[header.id]} scalers={scalers} />
+                  )),
+                ]}
+                style={[styles.head, { backgroundColor: tableIS.headerColor }]}
+                textStyle={headerTextStyle}
+              />
+            ))}
+          </Table>
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
+TableElement.propTypes = {
+  tableId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
+  type: PropTypes.string,
+};
+
+TableElement.defaultProps = {
+  type: undefined,
+};
+
+export default React.memo(TableElement);
+
 const styles = StyleSheet.create({
-  tableContainer: {
-  },
-  headingText: {
-    color: COLORS.WHITE,
-    fontFamily: FONTS.SEGOEUISEMIBOLD,
-    fontSize: normalizeFont(16),
-    textAlign: 'center',
-    marginVertical: scaleHeight(10),
-    fontWeight: '600'
-  },
-  rowText: {
-    color: COLORS.BLACK,
-    fontFamily: FONTS.SEGOEUISEMIBOLD,
-    fontSize: normalizeFont(16),
-    textAlign: 'center',
-    marginVertical: scaleHeight(10)
+  container: {
+    position: 'absolute',
+    padding: scaleHeight(10),
   },
   head: {
     backgroundColor: '#f1f8ff',
@@ -839,15 +373,13 @@ const styles = StyleSheet.create({
   text: {
     textAlign: 'center',
     fontFamily: FONTS.SEGOEUISEMIBOLD,
-    fontSize: normalizeFont(14),
-    color: '#000',
+    color: COLORS.BLACK,
   },
   border: {
     borderColor: '#fff',
   },
-  tableContainer: {
-    padding: scaleHeight(10),
-    margin: scaleHeight(20),
+  staticBorder: {
+    borderColor: '#000',
   },
   tableBorder: {
     borderWidth: 1,
@@ -857,4 +389,21 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#000',
   },
-})
+  numericCell: {
+    alignSelf: 'center',
+    margin: 0,
+    fontFamily: FONTS.SEGOEUISEMIBOLD,
+  },
+  progressLabel: {
+    color: '#fff',
+    position: 'absolute',
+    zIndex: 1,
+    margin: 4,
+  },
+  progressTrack: {
+    width: '90%',
+    backgroundColor: '#808080',
+    borderRadius: 5,
+    margin: 4,
+  },
+});

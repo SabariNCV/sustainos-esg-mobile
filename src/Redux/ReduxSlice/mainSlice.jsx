@@ -21,7 +21,7 @@ const initialState = {
     isDataFetched: false,
     notificationcount: 0,
     notificationDataIs: {},
-    baseUrlIs: 'https://SustainOS.ai:9000/',
+    baseUrlIs: 'https://sustainos.ai:9017/',
     eventsData: { timingBtnName: "today", fromDate: null, toDate: null, applyBtn: false },
     eventDate: [],
     squarestyles: {},
@@ -620,9 +620,6 @@ const mainSlice = createSlice({
         },
         openNotification: (state, action) => {
             state.openNotification = action.payload
-        },
-        notificationDataIs: (state, action) => {
-            state.notificationDataIs = action.payload
         },
         openLoadedpanel: (state, action) => {
             state.openLoadedpanel = action.payload

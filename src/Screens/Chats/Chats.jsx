@@ -1,8 +1,10 @@
-import React, { useCallback } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { View, Text, Image, TouchableOpacity } from 'react-native';
 import { Icon } from 'react-native-elements';
+import Video from 'react-native-video';
 import { Table, Row, Rows } from 'react-native-table-component';
 import CustomPlotly from '../../Components/CustomPlotly';
+import * as Speech from 'expo-speech';
 import { scaleHeight, scaleWidth } from '../../Constants/dynamicSize';
 import { styles } from './styles';
 import { IMAGES } from '../../Constants/Images';
@@ -33,13 +35,34 @@ const Chats = ({ item, index, animation, searchText }) => {
         value.toLocaleString()
     ]);
 
+    useEffect(() => {
+        if (item.text === 'How may I help you today?') {
+            Speech.speak('How may I help you today?');
+        }
+    }, [])
     return (
         <Animatable.View animation={animation}>
             <View style={{ marginHorizontal: scaleWidth(20), marginVertical: scaleHeight(10) }}>
-                {item.type === 'outgoing' && (
+                {item.type === 'video' && item.video && (
+                    <View style={{ maxWidth: '82%', flex: 1, alignSelf: 'flex-end', marginBottom: scaleHeight(10) }}>
+                        <View style={styles.bubblewrapperRightStyle}>
+                            <Video source={{ uri: item.video }} style={styles.videoPlayer} controls resizeMode="cover" />
+                        </View>
+                    </View>
+                )}
+
+                {item.type === 'outgoing' && !item.image && (
                     <View style={{ maxWidth: '82%', flex: 1, alignSelf: 'flex-end' }}>
                         <View style={styles.bubblewrapperRightStyle}>
                             <Text style={styles.bubbleRightTextStyle}>{highlightText(item.text)}</Text>
+                        </View>
+                    </View>
+                )}
+
+                {item.image && (
+                    <View style={{ maxWidth: '82%', flex: 1, alignSelf: 'flex-end' }}>
+                        <View style={styles.bubblewrapperRightStyle}>
+                            <Image source={{ uri: item.image }} style={styles.imagePick} resizeMode="cover" />
                         </View>
                     </View>
                 )}
@@ -90,7 +113,7 @@ const Chats = ({ item, index, animation, searchText }) => {
                                                             <Text style={styles.bubbleLeftTextStyle}>{highlightText(item.text)}</Text>
                                                         </View>
                                                         {item?.events_data?.map((event, index) => (
-                                                            <View key={index + 1}>
+                                                            <View key={index+1}>
                                                                 <TouchableOpacity style={styles.eventCard}>
                                                                     <View style={styles.titleView}>
                                                                         <Text style={styles.eventTitle}>{event?.description}</Text>

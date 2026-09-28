@@ -45,7 +45,7 @@ const MenuItem = memo(({ element, currentMenu, expandedSubMenu, menuTheme, onIte
       renderItem={({ item }) => (
         <View style={styles.subMenuWrapper}>
           <TouchableOpacity onPress={() => onItemPress(item)}>
-            <View style={[ styles.row, styles.subMenuRow, { backgroundColor: currentMenu === item?.menu_name ? menuTheme?.advancedBgColor : 'transparent' } ]}>
+            <View style={[styles.row, styles.subMenuRow, { backgroundColor: currentMenu === item?.menu_name ? menuTheme?.advancedBgColor : 'transparent' }]}>
               <View style={[styles.icon, styles.subMenuIcon]}>
                 <FontAwesomeIcon icon={fas[item?.icon || "faAngleRight"]} size={16} color={currentMenu === item?.menu_name ? menuTheme?.advancedColor : menuTheme?.childColor} style={styles.iconSpacing} />
                 <Text style={[
@@ -69,7 +69,7 @@ const MenuItem = memo(({ element, currentMenu, expandedSubMenu, menuTheme, onIte
     const isExpanded = expandedSubMenu === item?.menu_name;
 
     return (
-      <View style={[ styles.mainMenuContainer, { backgroundColor: isActive ? menuTheme?.advancedBgColor : 'transparent' } ]} >
+      <View style={[styles.mainMenuContainer, { backgroundColor: isActive ? menuTheme?.advancedBgColor : 'transparent' }]} >
         <TouchableOpacity onPress={() => onItemPress(item)} accessibilityLabel='Menu Button' style={styles.rowelements}>
           <View style={styles.row}>
             <View style={styles.icon}>
@@ -216,7 +216,7 @@ export default function CustomSidebarMenu({ navigation }) {
 
   return (
     <View style={[styles.container, { backgroundColor: menucolor, borderColor: menucolor }]}>
-        <SafeAreaView style={[styles.container, { backgroundColor: menucolor, borderColor: menucolor }]}>
+      <SafeAreaView style={[styles.container, { backgroundColor: menucolor, borderColor: menucolor }]}>
         <StatusBar backgroundColor="transparent" translucent={true} />
         <View style={styles.menuWrapper}>
           <TouchableOpacity onPress={() => navigation?.closeDrawer()}>

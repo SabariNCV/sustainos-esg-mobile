@@ -1,163 +1,97 @@
+import React, { useEffect, useMemo } from 'react';
+import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import * as Progress from 'react-native-progress';
-import { View, Text, StyleSheet, } from "react-native";
-import React, { useEffect, useState } from "react";
-import { scaleWidth, scaleHeight } from '../../../Constants/dynamicSize';
-import { panelnormalizeFont, panelscaleHeight, panelscaleWidth } from '../../../Constants/panelSize';
 import { useDispatch, useSelector } from 'react-redux';
+import PropTypes from 'prop-types';
+import { scaleWidth, scaleHeight } from '../../../Constants/dynamicSize';
+import { panelscaleHeight, panelscaleWidth } from '../../../Constants/panelSize';
 import { updateHeight } from '../../../Redux/ReduxSlice/mainSlice';
-import { TimingsConversion } from '../TimingsConversion';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
 import { COLORS } from '../../../Constants/Colors';
+import { useShapeValue } from '../../../Components/useShapeValue';
+import { getShapeData, resolveShapeColor, clampHorizontal, calculateProgress, } from '../../../Components/shapeUtils';
 
-const CircularProgressBars = (props) => {
-  const { progressStylesIs, id,type } = props
-  const progressStyles = progressStylesIs[id].dataIs;
+const CircularProgressBars = ({ progressStylesIs, id, type }) => {
   const dispatch = useDispatch();
-  const [progress, setProgress] = useState(70);
-  const [labelParmValue, setlabelParmValue] = useState("")
-  const BASE_URL = useSelector(state => state.mainSlice.baseUrlIs);
-  let parmValueColor = progressStyles.progressColor
-  useEffect(() => {
-    const newHeight = Number(progressStyles?.position?.y) + Number(progressStyles.height);
-    dispatch(updateHeight(newHeight));
-  }, [Number(progressStyles?.position?.y), dispatch]);
+  const baseUrl = useSelector((state) => state.mainSlice.baseUrlIs);
+  const { width: screenWidth } = useWindowDimensions();
+  const isPanel = type === 'panel';
 
-  const updateColor = (ele) => {
-    switch (ele.condition) {
-      case "minMax":
-        if (parseFloat(labelParmValue) > parseFloat(ele.min) && parseFloat(labelParmValue) < parseFloat(ele.max)) {
-          parmValueColor = ele.color;
-        }
-        break;
-      case "greaterThan":
-        if (parseFloat(labelParmValue) > parseFloat(ele.min)) {
-          parmValueColor = ele.color;
-        }
-        break;
-      case "lessThan":
-        if (parseFloat(labelParmValue) < parseFloat(ele.max)) {
-          parmValueColor = ele.color;
-        }
-        break;
-      case "greaterThanEquall":
-        if (parseFloat(labelParmValue) >= parseFloat(ele.max)) {
-          parmValueColor = ele.color;
-        }
-        break;
-      case "lessThanEquall":
-        if (parseFloat(labelParmValue) <= parseFloat(ele.max)) {
-          parmValueColor = ele.color;
-        }
-        break;
-      default:
-        break;
-    }
-  };
-  progressStyles.labelValueRange.map((ele) => updateColor(ele));
-  useEffect(() => {
-    let refreshTime = 0;
-    const refreshFreq = progressStyles.refreshFreq.split(" ")
-    if (refreshFreq[1] === "Second") {
-      refreshTime = parseInt(refreshFreq[0]) * 1000
-    } else if (refreshFreq[1] === "Minute") {
-      refreshTime = parseInt(refreshFreq[0]) * 1000 * 60
-    } else if (refreshFreq[1] === "Hours") {
-      refreshTime = parseInt(refreshFreq[0]) * 1000 * 60 * 60
-    } else {
-      refreshTime = "None"
-    }
+  const shape = getShapeData(progressStylesIs, id, false);
+  const isDynamic = shape.shapeType === 'dynamic' && shape.parameters.length > 0;
+  const dynamicValue = useShapeValue(shape, baseUrl);
 
-    const fetchDataAndRender = async () => {
-      const paramData = progressStyles
-      let fromDateIs, toDateIs
-      if (progressStyles.aggregateTime !== "custom") {
-        const timeIs = TimingsConversion(progressStyles.aggregateTime)
-        fromDateIs = timeIs[0]
-        toDateIs = timeIs[1]
-      } else {
-        fromDateIs = progressStyles.fromDate
-        toDateIs = progressStyles.toDate
-      }
-      const parametersId = paramData.parameters.map((ele) => ele.parameterId)
-      const RequestBody = {};
-      const filter_tags = [];
-      paramData.parameters.forEach(item => {
-        const conditions = item.fiterConditionsNewFormat.join(' ');
-        RequestBody[item.parameterId] = conditions;
-        item.fiterConditionsNewFormat.forEach(condition => {
-          const paramId = condition.split(' ')[0];
-          if (!parametersId.includes(parseInt(paramId)) && !filter_tags.includes(paramId)) {
-            filter_tags.push(paramId);
-          }
-        });
-      });
-      RequestBody["filter_tags"] = filter_tags.join(',');
-      let url;
-      if (paramData.aggregateTime === "custom") {
-        url = `${BASE_URL}dataservice_app/api/parameter_values/?id=${parametersId}&from_date=${fromDateIs}&to_date=${toDateIs}&aggregation_type=${paramData.aggregateRange}&filter_condition=${JSON.stringify(RequestBody)}`;
-      } else {
-        url = `${BASE_URL}dataservice_app/api/parameter_values/?id=${parametersId}&aggregation_type=${paramData.aggregateRange}&time_frequency=${paramData.aggregateTime}&filter_condition=${JSON.stringify(RequestBody)}`;
-      }
-      try {
-        const token = await AsyncStorage.getItem('jwttoken');
-        const response = await axios.get(url, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const data = response.data.data;
-        if (data) {
-          const value = data[parametersId[0]]
-          setlabelParmValue(value)
-          const maxValue = parseInt(progressStyles.maxValue)
-          const minValue = parseInt(progressStyles.minValue)
-          if (value >= maxValue) {
-            setProgress(100)
-          } else if (value <= minValue) {
-            setProgress(0)
-          } else {
-            const valueIs = (100 * value) / maxValue
-            setProgress(valueIs)
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
-    if (progressStyles.shapeType === "dynamic" && progressStyles.parameters.length > 0) {
-      fetchDataAndRender()
-      if (refreshTime !== "None") {
-        const intervalId = setInterval(fetchDataAndRender, refreshTime);
-        return () => clearInterval(intervalId);
-      }
-    } else {
-      const value = parseInt(progressStyles.staticValue)
-      const maxValue = parseInt(progressStyles.maxValue)
-      const minValue = parseInt(progressStyles.minValue)
-      if (value >= maxValue) {
-        setProgress(100)
-      } else if (value <= minValue) {
-        setProgress(0)
-      } else {
-        const valueIs = (100 * value) / maxValue
-        setProgress(valueIs)
-      }
-    }
-  }, [])
+  const positionY = Number(shape.position?.y);
+  const shapeHeight = Number(shape.height);
+
+  useEffect(() => {
+    dispatch(updateHeight(positionY + shapeHeight));
+  }, [positionY, shapeHeight, dispatch]);
+
+  const color = useMemo(
+    () => resolveShapeColor(dynamicValue, shape.labelValueRange, shape.progressColor),
+    [dynamicValue, shape.labelValueRange, shape.progressColor],
+  );
+
+  const progress = useMemo(() => {
+    const value = Number.parseFloat(isDynamic ? dynamicValue : shape.staticValue);
+    const min = Number.parseInt(shape.minValue, 10);
+    const max = Number.parseInt(shape.maxValue, 10);
+    return calculateProgress(value, min, max);
+  }, [isDynamic, dynamicValue, shape.staticValue, shape.minValue, shape.maxValue]);
+
+  const layout = useMemo(() => {
+    const scaleX = isPanel ? panelscaleWidth : scaleWidth;
+    const scaleY = isPanel ? panelscaleHeight : scaleHeight;
+    const x = Number(shape.position?.x);
+    const y = Number(shape.position?.y);
+    return clampHorizontal(
+      {
+        left: isPanel ? scaleX(x - 5) : scaleX(x),
+        top: isPanel ? scaleY(y + 5) : scaleY(y),
+        width: scaleX(shape.width),
+        height: scaleY(shape.height),
+      },
+      screenWidth,
+    );
+  }, [shape.position?.x, shape.position?.y, shape.width, shape.height, isPanel, screenWidth]);
 
   return (
-    <View style={{
-      left: type === 'panel' ?  panelscaleWidth(progressStyles?.position?.x - 5) :  scaleWidth(progressStyles?.position?.x),
-      top: type === 'panel' ? panelscaleHeight(progressStyles?.position?.y + 5) :scaleHeight(progressStyles?.position?.y),
-      position: 'absolute',
-    }}>
-      {progressStyles?.progressBarType === "Circular" ?
-        <Progress.Circle size={type === 'panel' ? panelscaleWidth(progressStyles?.width) : scaleWidth(progressStyles?.width)} progress={progress} color={progressStyles?.progressColor} borderWidth={1} />
-        :
-        <Progress.Bar width={type === 'panel' ? panelscaleWidth(progressStyles?.width) : scaleWidth(progressStyles?.width)} progress={(progress / 100)} height={type === 'panel' ? panelscaleHeight(progressStyles?.height):scaleHeight(progressStyles?.height)} color={parmValueColor} borderWidth={0.6} borderColor={COLORS.DIVIDER} />}
+    <View style={[styles.container, { left: layout.left, top: layout.top }]}>
+      {shape.progressBarType === 'Circular' ? (
+        <Progress.Circle
+          size={layout.width}
+          progress={progress / 100}
+          color={color}
+          borderWidth={1}
+        />
+      ) : (
+        <Progress.Bar
+          width={layout.width}
+          height={layout.height}
+          progress={progress / 100}
+          color={color}
+          borderWidth={0.6}
+          borderColor={COLORS.DIVIDER}
+        />
+      )}
     </View>
-  )
-}
+  );
+};
 
-export default CircularProgressBars
+CircularProgressBars.propTypes = {
+  progressStylesIs: PropTypes.oneOfType([PropTypes.array, PropTypes.object]).isRequired,
+  id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
+  type: PropTypes.string,
+};
+
+CircularProgressBars.defaultProps = {
+  type: undefined,
+};
+
+export default React.memo(CircularProgressBars);
+
+const styles = StyleSheet.create({
+  container: {
+    position: 'absolute',
+  },
+});
