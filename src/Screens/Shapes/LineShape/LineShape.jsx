@@ -1,44 +1,49 @@
 import React from 'react';
-import { View, PixelRatio } from 'react-native';
-import { scaleHeight, scaleWidth } from '../../../Constants/dynamicSize';
-import { panelscaleHeight, panelscaleWidth } from '../../../Constants/panelSize';
-function Line(props) {
-  const { id, lineStylesIs,tabShape,type } = props
-  let lineStyles
-  if (tabShape) {
-    lineStyles = lineStylesIs.filter(ele => ele.id === id)[0].dataIs
-  } else {
-    lineStyles = lineStylesIs[id].dataIs;
+import { View, PixelRatio, StyleSheet } from 'react-native';
+import PropTypes from 'prop-types';
+import { SCALERS, hasRequiredStyles, resolveShapeStyles } from '../shapeUtils';
+
+function Line({ id, lineStylesIs, tabShape = false, type }) {
+  const lineStyles = resolveShapeStyles(lineStylesIs, id, tabShape);
+
+  if (!hasRequiredStyles(lineStyles)) {
+    return null;
   }
+
+  const scalers = type === 'panel' ? SCALERS.panel : SCALERS.default;
+  const { position, width, height, rotation, SquareBg, chartZindex } = lineStyles;
+
   return (
-    <>
-      {
-        lineStyles?.position &&
-        lineStyles?.width &&
-        lineStyles?.height &&
-        lineStyles?.SquareBg &&
-        lineStyles?.rotation != null
-        &&
-        <View style={[styles.image,
+    <View
+      style={[
+        styles.line,
         {
-          flex: 0,
-          top: type === "panel" ? panelscaleHeight(PixelRatio.roundToNearestPixel(Number(lineStyles?.position?.y))) : scaleHeight(PixelRatio.roundToNearestPixel(Number(lineStyles?.position?.y))),
-          left: type === "panel" ? panelscaleWidth(PixelRatio.roundToNearestPixel(Number(lineStyles?.position?.x - 5))) : scaleWidth(PixelRatio.roundToNearestPixel(Number(lineStyles?.position?.x - 5))),
-          transform: [
-            { rotate: `${lineStyles?.rotation}deg` },
-          ],
-          width: type === "panel" ? panelscaleWidth(lineStyles.width) : scaleWidth(lineStyles.width),
-          height: type === "panel" ? panelscaleHeight(lineStyles.height) : scaleHeight(lineStyles.height),
-          backgroundColor: lineStyles.SquareBg,
-          zIndex: lineStyles.chartZindex
-        }
-        ]} />
-      }
-    </>
+          top: scalers.height(PixelRatio.roundToNearestPixel(Number(position.y))),
+          left: scalers.width(PixelRatio.roundToNearestPixel(Number(position.x - 5))),
+          width: scalers.width(width),
+          height: scalers.height(height),
+          transform: [{ rotate: `${rotation}deg` }],
+          backgroundColor: SquareBg,
+          zIndex: chartZindex,
+        },
+      ]}
+    />
   );
 }
 
+Line.propTypes = {
+  id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
+  lineStylesIs: PropTypes.oneOfType([PropTypes.array, PropTypes.object]).isRequired,
+  tabShape: PropTypes.bool,
+  type: PropTypes.string,
+};
+
+const styles = StyleSheet.create({
+  line: {
+    flex: 0,
+    position: 'absolute',
+    alignSelf: 'center',
+  },
+});
+
 export default Line;
-
-
-

@@ -7,11 +7,11 @@ import {
   useChartStore, useChartRefresh, useChartInsight,
 } from '../../../Components/chartUtils';
 
-const COLORS_KEY = 'ganttChart-colors';
+const colors_key = 'ganttChart-colors';
 const RECENT_MINUTES = 2;
 const POINT_WINDOW_START = 7;
 const POINT_WINDOW_END = 9;
-const BASIC_DETAILS = createBasicDetails('Gantt Chart');
+const basic_details_chart = createBasicDetails('Gantt Chart');
 
 const selectAll = (payload) => payload;
 
@@ -52,8 +52,8 @@ export default function GanttChart({
       paged,
       checkTheCond,
       chartId,
-      storageKey: COLORS_KEY,
-      basicDetails: BASIC_DETAILS,
+      storageKey: colors_key,
+      basicDetails: basic_details_chart,
       sizeProps: { x: xIs, y: yIs, width, height },
     }),
     [paged, checkTheCond, chartId, xIs, yIs, width, height],

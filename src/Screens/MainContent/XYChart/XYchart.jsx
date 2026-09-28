@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import { TimingsConversion } from '../TimingsConversion';
 import ChartComponent from '../../../Components/ChartComponent';
 import {
-  PANEL, buildAxesLayout, buildChartColors, buildChartFrame, buildChartPropTypes,
+  type_panel, buildAxesLayout, buildChartColors, buildChartFrame, buildChartPropTypes,
   buildFilterRequestBody, buildLegend, buildNoDataAnnotations, buildRequestUrl,
   createBasicDetails, isAnalyticsPage, loadChartData, resolveChartRange,
   useChartInsight, useChartRefresh, useChartStore,
@@ -17,7 +17,7 @@ const TREND_COLOR = '#FF0101';
 const R_SQUARED_FONT_SIZE = 12;
 const passThrough = (payload) => payload;
 
-const BASIC_DETAILS = createBasicDetails('XY Chart', {
+const basic_details_chart = createBasicDetails('XY Chart', {
   fSize: '18px', xFonntSize: '16', yFonntSize: '16', legendTop: true, xParm: '', yParm: '', xyLine: true,
 });
 
@@ -122,7 +122,7 @@ export default function XYChart({
       checkTheCond,
       chartId,
       storageKey: STORAGE_KEY,
-      basicDetails: BASIC_DETAILS,
+      basicDetails: basic_details_chart,
       sizeProps: { x: xIs, y: yIs, width, height },
     }),
     [paged, checkTheCond, chartId, xIs, yIs, width, height],
@@ -130,7 +130,7 @@ export default function XYChart({
 
   const fetchData = useCallback(async () => {
     const isAnalytics = isAnalyticsPage(paged);
-    const isPanel = type === PANEL;
+    const isPanel = type === type_panel;
     const paramData = isAnalytics ? chartList : colors;
     const xyChart = isAnalytics
       ? { x: chartList?.xType, y: chartList?.yType }

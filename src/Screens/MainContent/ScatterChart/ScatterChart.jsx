@@ -3,16 +3,16 @@ import { View } from 'react-native';
 import { TimingsConversion } from '../TimingsConversion';
 import ChartComponent from '../../../Components/ChartComponent';
 import {
-  PANEL, isAnalyticsPage, createBasicDetails, buildChartPropTypes, buildChartColors,
+  type_panel, isAnalyticsPage, createBasicDetails, buildChartPropTypes, buildChartColors,
   buildFilterRequestBody, buildRequestUrl, resolveChartRange, loadChartData, resolveHoverInfo,
   resolveSeriesColor, buildSeriesName, collectSeries, buildAxesLayout, buildLegend,
   buildNoDataAnnotations, buildChartFrame, useChartStore, useChartRefresh, useChartInsight,
 } from '../../../Components/chartUtils';
 
-const COLORS_KEY = 'scatterChart-colors';
+const colors_key = 'scatterChart-colors';
 const ANALYTICS_MARKER_SIZE = 12;
 const SCATTER_MARKER_SIZE = 7;
-const BASIC_DETAILS = createBasicDetails('Scatter Chart', { legendTop: true });
+const basic_details_chart = createBasicDetails('Scatter Chart', { legendTop: true });
 
 const calculateBubbleSize = (values, minSize = 5, maxSize = 20) => {
   const minValue = Math.min(...values);
@@ -90,15 +90,15 @@ export default function ScatterChart({
       paged,
       checkTheCond,
       chartId,
-      storageKey: COLORS_KEY,
-      basicDetails: BASIC_DETAILS,
+      storageKey: colors_key,
+      basicDetails: basic_details_chart,
       sizeProps: { x: xIs, y: yIs, width, height },
     }),
     [paged, checkTheCond, chartId, xIs, yIs, width, height],
   );
 
   const fetchDataAndRender = useCallback(async () => {
-    const isPanel = type === PANEL;
+    const isPanel = type === type_panel;
     const paramData = isAnalyticsPage(paged) ? chartList : scatterChartColors;
     const { fromDate, toDate } = resolveChartRange({
       paged, chartList, colors: scatterChartColors, isPanel, eventDatesIs, timingsConverter: TimingsConversion,

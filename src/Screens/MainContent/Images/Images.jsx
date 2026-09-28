@@ -63,7 +63,7 @@ function Images({ imageId, imageDataIs, type }) {
     if (Number.isFinite(positionY) && Number.isFinite(rawHeight)) {
       dispatch(updateHeight(positionY + rawHeight));
     }
-  }, [positionY, rawHeight, dispatch]);
+  }, [positionY, rawHeight, ]);
 
   const colorSource = useMemo(
     () => evaluateColorRange(imageIs.labelValueRange, paramValue, ''),

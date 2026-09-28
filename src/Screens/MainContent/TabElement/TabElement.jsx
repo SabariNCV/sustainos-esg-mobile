@@ -112,7 +112,7 @@ function TabElement({ tabId }) {
 
   useEffect(() => {
     dispatch(updateHeight(positionY + (tabHeight / 100) * 850 + 20));
-  }, [positionY, tabHeight, dispatch]);
+  }, [positionY, tabHeight ]);
 
   const handleTabChange = useCallback((nextIndex) => setIndex(nextIndex), []);
 

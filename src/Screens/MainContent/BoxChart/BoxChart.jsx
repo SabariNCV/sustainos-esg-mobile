@@ -3,18 +3,18 @@ import { View } from 'react-native';
 import { TimingsConversion } from '../TimingsConversion';
 import ChartComponent from '../../../Components/ChartComponent';
 import {
-  DEFAULT_CHART_COLORS, PANEL, isAnalyticsPage, createBasicDetails, buildChartPropTypes,
+  default_chart_colors, type_panel, isAnalyticsPage, createBasicDetails, buildChartPropTypes,
   buildChartColors, buildFilterRequestBody, buildRequestUrl, resolveChartRange, loadChartData,
   resolveHoverInfo, buildParameterMaps, getLegendName, buildAxesLayout, buildLegend,
   buildNoDataAnnotations, buildChartFrame, useChartStore, useChartRefresh, useChartInsight,
 } from '../../../Components/chartUtils';
 
-const COLORS_KEY = 'boxChart-colors';
+const colors_key = 'boxChart-colors';
 const VERTICAL_TYPES = new Set(['V', '']);
-const BASIC_DETAILS = createBasicDetails('Box Chart', { timeRange: 'hour', legendType: 'code' });
+const basic_details_chart = createBasicDetails('Box Chart', { timeRange: 'hour', legendType: 'code' });
 
 const buildBoxTraces = ({ data, paramData, paged, parametersId, multiaxis }) => {
-  const maps = buildParameterMaps(paramData.parameters, DEFAULT_CHART_COLORS);
+  const maps = buildParameterMaps(paramData.parameters, default_chart_colors);
   const isVertical = VERTICAL_TYPES.has(paramData.barType);
   const usedLegendNames = new Set();
 
@@ -69,8 +69,8 @@ export default function BoxChart({
       paged,
       checkTheCond,
       chartId,
-      storageKey: COLORS_KEY,
-      basicDetails: BASIC_DETAILS,
+      storageKey: colors_key,
+      basicDetails: basic_details_chart,
       sizeProps: { x: xIs, y: yIs, width, height },
       analyticsExtras: { multiaxis: chartList?.multiAxis, parameters: chartList?.parameters },
     }),
@@ -78,7 +78,7 @@ export default function BoxChart({
   );
 
   const fetchDataAndRender = useCallback(async () => {
-    const isPanel = type === PANEL;
+    const isPanel = type === type_panel;
     const paramData = isAnalyticsPage(paged) ? chartList : boxChartColors;
     const { fromDate, toDate } = resolveChartRange({
       paged, chartList, colors: boxChartColors, isPanel, eventDatesIs, timingsConverter: TimingsConversion,

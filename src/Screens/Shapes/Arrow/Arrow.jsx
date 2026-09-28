@@ -1,87 +1,96 @@
-import React, { useRef } from 'react';
+import React, { useMemo } from 'react';
+import { View, PixelRatio, StyleSheet, TouchableOpacity } from 'react-native';
 import { WebView } from 'react-native-webview';
-function Arrow(props) {
-  const { id, arrowStylesIs, tabShape } = props
-  let arrowStyles
-  if (tabShape) {
-    arrowStyles = arrowStylesIs.filter(ele => ele.id === id)[0].dataIs
-  } else {
-    arrowStyles = arrowStylesIs[id].dataIs;
+import PropTypes from 'prop-types';
+import { scaleHeight, scaleWidth } from '../../../Constants/dynamicSize';
+import { hasRequiredStyles, resolveShapeStyles } from '../shapeUtils';
+
+const ARROW_CLIP_PATH = 'polygon(0 39%, 74% 38%, 74% 0, 100% 50%, 73% 97%, 74% 58%, 0 59%)';
+
+function Arrow({ id, arrowStylesIs, tabShape = false }) {
+  const arrowStyles = resolveShapeStyles(arrowStylesIs, id, tabShape);
+  const { width, height, SquareBg } = arrowStyles ?? {};
+
+  const html = useMemo(
+    () => `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+          }
+          .arrow {
+            width: ${scaleWidth(width)}px;
+            height: ${scaleHeight(height)}px;
+            clip-path: ${ARROW_CLIP_PATH};
+            background-color: ${SquareBg};
+            display: flex;
+            justify-content: center;
+            align-items: center;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="arrow"></div>
+      </body>
+      </html>
+    `,
+    [width, height, SquareBg]
+  );
+
+  if (!hasRequiredStyles(arrowStyles)) {
+    return null;
   }
 
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <style>
-        body {
-          margin: 0;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-        }
-        .arrow {
-          width: ${scaleWidth(arrowStyles.width)}px; 
-          height: ${scaleHeight(arrowStyles.height)}px; 
-          clip-path: polygon(0 39%, 74% 38%, 74% 0, 100% 50%, 73% 97%, 74% 58%, 0 59%);
-          background-color: ${arrowStyles.SquareBg}; 
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          
-        }
-      </style>
-    </head>
-    <body>
-      <div class="arrow"></div>
-    </body>
-    </html>
-  `;
+  const { position, rotation } = arrowStyles;
 
-  const selectShape = () => {
-    const panelId = arrowStyles.panelId
-    if (panelId !== "") {
-      dispatch(openPanel(!isPanelOpen))
-      dispatch(panelIdIs(panelId))
-    }
-  }
   return (
-    <>
-      {
-        arrowStyles?.position &&
-        arrowStyles?.width &&
-        arrowStyles?.height &&
-        arrowStyles?.SquareBg &&
-        arrowStyles?.rotation != null
-        &&
-        <TouchableOpacity disabled={true}>
-          <View style={[styles.arrowContainer, {
-            top: scaleHeight(PixelRatio.roundToNearestPixel(Number(arrowStyles?.position?.y))),
-            left: scaleWidth(PixelRatio.roundToNearestPixel(Number(arrowStyles?.position?.x - 5))),
-            width: scaleWidth(arrowStyles.width),
-            height: scaleHeight(arrowStyles.height),
-            transform: [
-              { rotate: `${arrowStyles?.rotation}deg` },
-            ],
-          }]}>
-            <WebView
-              originWhitelist={['*']}
-              source={{ html: html }}
-              javaScriptEnabled={true}
-              domStorageEnabled={true}
-              startInLoadingState={true}
-              style={{ backgroundColor: 'transparent', flex: 1, }}
-              scrollEnabled={false}
-              scalesPageToFit={false}
-            />
-          </View>
-        </TouchableOpacity>
-      }
-    </>
-  )
+    <TouchableOpacity disabled>
+      <View
+        style={[
+          styles.arrowContainer,
+          {
+            top: scaleHeight(PixelRatio.roundToNearestPixel(Number(position.y))),
+            left: scaleWidth(PixelRatio.roundToNearestPixel(Number(position.x - 5))),
+            width: scaleWidth(width),
+            height: scaleHeight(height),
+            transform: [{ rotate: `${rotation}deg` }],
+          },
+        ]}
+      >
+        <WebView
+          originWhitelist={['*']}
+          source={{ html }}
+          javaScriptEnabled
+          domStorageEnabled
+          startInLoadingState
+          style={styles.webView}
+          scrollEnabled={false}
+          scalesPageToFit={false}
+        />
+      </View>
+    </TouchableOpacity>
+  );
 }
 
+Arrow.propTypes = {
+  id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
+  arrowStylesIs: PropTypes.oneOfType([PropTypes.array, PropTypes.object]).isRequired,
+  tabShape: PropTypes.bool,
+};
+
+const styles = StyleSheet.create({
+  arrowContainer: {
+    position: 'absolute',
+  },
+  webView: {
+    backgroundColor: 'transparent',
+    flex: 1,
+  },
+});
+
 export default Arrow;
-
-
-

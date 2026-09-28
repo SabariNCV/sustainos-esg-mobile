@@ -3,13 +3,13 @@ import { View } from 'react-native';
 import { TimingsConversion } from '../TimingsConversion';
 import ChartComponent from '../../../Components/ChartComponent';
 import {
-  PANEL, isAnalyticsPage, createBasicDetails, buildChartPropTypes, buildChartColors,
+  type_panel, isAnalyticsPage, createBasicDetails, buildChartPropTypes, buildChartColors,
   buildFilterRequestBody, buildRequestUrl, resolveChartRange, loadChartData, buildAxisFont,
   buildNoDataAnnotations, buildChartFrame, useChartStore, useChartRefresh, useChartInsight,
 } from '../../../Components/chartUtils';
 
-const COLORS_KEY = 'gaugeChart-colors';
-const BASIC_DETAILS = createBasicDetails('Gauge Chart', {
+const colors_key = 'gaugeChart-colors';
+const basic_details_chart = createBasicDetails('Gauge Chart', {
   fSize: '18px', xFonntSize: '16', yFonntSize: '16', gaugeMin: '', gaugeMax: '', gaugeBg: [], gaugecolor: [],
 });
 
@@ -46,15 +46,15 @@ export default function GaugeChart({
       paged,
       checkTheCond,
       chartId,
-      storageKey: COLORS_KEY,
-      basicDetails: BASIC_DETAILS,
+      storageKey: colors_key,
+      basicDetails: basic_details_chart,
       sizeProps: { x: xIs, y: yIs, width, height },
     }),
     [paged, checkTheCond, chartId, xIs, yIs, width, height],
   );
 
   const fetchDataAndRender = useCallback(async () => {
-    const isPanel = type === PANEL;
+    const isPanel = type === type_panel;
     const paramData = isAnalyticsPage(paged) ? chartList : gaugeChartColors;
     const { fromDate, toDate } = resolveChartRange({
       paged, chartList, colors: gaugeChartColors, isPanel, eventDatesIs, timingsConverter: TimingsConversion,

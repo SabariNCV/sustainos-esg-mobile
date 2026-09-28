@@ -7,13 +7,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TimingsConversion } from '../TimingsConversion';
 import { updateHeight } from '../../../Redux/ReduxSlice/mainSlice';
 import ChartComponent from '../../../Components/ChartComponent';
-import {
-  DEFAULT_CHART_COLORS, parseHeight, getRefreshInterval, resolveTimeRange,
-  buildFilterRequestBody, buildAuthHeaders, captureChartInsight,
-} from '../../../Components/chartUtils';
+import { default_chart_colors, parseHeight, getRefreshInterval, resolveTimeRange, buildFilterRequestBody, buildAuthHeaders, captureChartInsight, } from '../../../Components/chartUtils';
 
 const ANALYTICS = 'analytics';
-const PANEL = 'panel';
+const type_panel = 'panel';
 const GRID_DASH = 'dot';
 const GRID_SHAPE = 'linear';
 const PAPER = 'paper';
@@ -24,7 +21,7 @@ const AXIS_SPACING = 0.06;
 const AXIS_DOMAIN_PADDING = 0.03;
 const HIDDEN_AXIS = { showgrid: false, zeroline: false, showline: false, showticklabels: false };
 
-const BASIC_DETAILS = {
+const basic_details_chart = {
   chartTitle: 'Line Chart', plotAreaBg: '#fff', plotAreaOutline: DEFAULT_GRID_COLOR, areaBackground: '#fff', areaOutline: '#fff',
   isGridPresent: true, toolTip: true, showLegend: true, legend: { x: 0.5, y: 1.1 }, chartType: 'horizontal', barGap: 0.3, donutGap: 0.6, scatterType: 'bubble',
   fSize: '10', fFamily: DEFAULT_FONT, isBold: false, isItalic: false, isUnderLine: false, isCaseChange: false, legendType: 'name', isTitleOpen: false,
@@ -37,7 +34,7 @@ const BASIC_DETAILS = {
 const buildLineChartColors = ({ paged, chartList, checkTheCond, chartId, sizeProps }) => {
   if (paged === ANALYTICS) {
     return {
-      ...BASIC_DETAILS,
+      ...basic_details_chart,
       multiaxis: chartList.multiAxis,
       parameters: chartList.parameters,
       reSizeProperties: sizeProps,
@@ -206,7 +203,7 @@ const buildTrace = ({ paramId, index, paramData, paged, data, multiaxis }) => {
   });
 
   const isSpline = Boolean(paramData.isCubicSpline);
-  const lineColor = paged === ANALYTICS ? DEFAULT_CHART_COLORS[index] : paramData.parameters[index].parameterColor;
+  const lineColor = paged === ANALYTICS ? default_chart_colors[index] : paramData.parameters[index].parameterColor;
 
   return {
     x,
@@ -255,7 +252,7 @@ export default function LineChart({
   );
 
   const fetchDataAndRender = useCallback(async () => {
-    const isPanel = type === PANEL;
+    const isPanel = type === type_panel;
     const isAnalytics = paged === ANALYTICS;
     const paramData = isAnalytics ? chartList : lineChartColors;
 

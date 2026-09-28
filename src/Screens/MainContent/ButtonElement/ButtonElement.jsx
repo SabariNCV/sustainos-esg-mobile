@@ -21,7 +21,7 @@ function ButtonElement({ buttonId, buttonDataIs, type, buttonPress }) {
 
   useEffect(() => {
     dispatch(updateHeight(positionY + 100));
-  }, [positionY, dispatch]);
+  }, [positionY]);
 
   const handlePress = useCallback(() => {
     if (panelId) {

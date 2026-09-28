@@ -43,7 +43,7 @@ function Label({ labelId, labelDataIs, type }) {
     if (positionY) {
       dispatch(updateHeight(Number(positionY) + 100));
     }
-  }, [positionY, dispatch]);
+  }, [positionY, ]);
 
   const boxStyle = useMemo(() => {
     const resize = labelIS?.reSizeProperties;

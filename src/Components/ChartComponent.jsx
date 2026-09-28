@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
-import { View, Text, Platform, ActivityIndicator, Animated, TouchableOpacity, ImageBackground } from 'react-native';
+import { View, Text, Platform, ActivityIndicator, Animated, TouchableOpacity, ImageBackground, Dimensions } from 'react-native';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { fas } from '@fortawesome/pro-solid-svg-icons';
 import { chartStyles as styles } from './styles';
@@ -13,6 +13,8 @@ import { faXmark } from '@fortawesome/free-solid-svg-icons';
 
 const SHADOW_COLOR = Platform.OS === 'ios' ? COLORS.ASH : '#000';
 const BORDER_COLOR = '#D3D3D3';
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const HORIZONTAL_PADDING = scaleWidth(12);
 
 const getRadius = (isBorderRadius) => (isBorderRadius ? 10 : 1);
 
@@ -225,13 +227,13 @@ const ChartComponent = (props) => {
     height: screen === 'analytics' ? scaleHeight(400) : type === 'panel' ? panelscaleHeight(225) : scaleHeight(225),
     position: screen === 'analytics' ? 'relative' : 'absolute',
     alignSelf: 'center',
-    width: type === 'panel' ? panelscaleWidth(350) : scaleWidth(350)
+    width: type === 'panel' ? SCREEN_WIDTH : SCREEN_WIDTH - HORIZONTAL_PADDING * 2,
   }), [screen, type]);
 
   const chartBoxStyle = useMemo(() => ({
     alignSelf: 'flex-start',
     justifyContent: 'center',
-    width: scaleWidth(350),
+    width: SCREEN_WIDTH - HORIZONTAL_PADDING * 2,
     height: 200,
     marginTop: scaleHeight(100),
     shadowColor: SHADOW_COLOR,
@@ -264,7 +266,7 @@ const ChartComponent = (props) => {
   const panelBoxStyle = useMemo(() => ({
     alignSelf: 'flex-start',
     justifyContent: 'center',
-    width: type === 'panel' ? panelscaleWidth(350) : scaleWidth(350),
+    width: type === 'panel' ? panelscaleWidth(360) : SCREEN_WIDTH - HORIZONTAL_PADDING * 2,
     height: getPanelBodyHeight(rndproperties?.height, screen, type),
     shadowColor: SHADOW_COLOR,
     shadowOffset: { width: 0, height: 2 },

@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { updateHeight } from '../Redux/ReduxSlice/mainSlice';
 
 export const ANALYTICS = 'analytics';
-export const PANEL = 'panel';
+export const type_panel = 'panel';
 
 const PAPER = 'paper';
 const GRID_DASH = 'dot';
@@ -19,12 +19,12 @@ const HIDDEN_AXIS = { showgrid: false, zeroline: false, showline: false, showtic
 const RANGED_AGGREGATES = new Set(['custom', 'Days', 'Hours', 'Month', 'Past Month']);
 const CHART_INSIGHT_URL = 'https://SustainOS.ai:9012/services/upload_chart/';
 
-export const DEFAULT_CHART_COLORS = [
+export const default_chart_colors = [
   '#00A68F', '#528CFA', '#FF8810', '#C46253', '#7E01A9',
   '#CF2020', '#FFBB10', '#748C76', '#DF9F4E', '#9B79FF',
 ];
 
-export const HEATMAP_PALETTES = [
+export const heatmap_palettes = [
   'none',
   [[0, '#C5E2EC'], [0.2, '#9DC4D3'], [0.5, '#74A7B9'], [0.8, '#48879D'], [1, '#236D86']],
   [[0, '#00F5E7'], [0.2, '#00F8E0'], [0.5, '#00F3D4'], [0.8, '#00DEC4'], [1, '#34E9CC']],
@@ -145,7 +145,7 @@ export const buildAuthHeaders = (token) => ({
 
 export const isAnalyticsPage = (paged) => typeof paged === 'string' && paged.toLowerCase() === ANALYTICS;
 
-export const buildParameterMaps = (parameters = [], defaultColors = DEFAULT_CHART_COLORS) => {
+export const buildParameterMaps = (parameters = [], defaultColors = default_chart_colors) => {
   const markerColor = {};
   const parametersName = {};
   const globalName = {};
@@ -265,7 +265,7 @@ export const loadChartData = async ({
 export const resolveHoverInfo = (enabled) => (enabled ? 'all' : 'none');
 
 export const resolveSeriesColor = (paged, index, parameter) => (
-  isAnalyticsPage(paged) ? DEFAULT_CHART_COLORS[index] : parameter?.parameterColor
+  isAnalyticsPage(paged) ? default_chart_colors[index] : parameter?.parameterColor
 );
 
 export const buildParameterLabel = (parameter, paged, legendType) => {

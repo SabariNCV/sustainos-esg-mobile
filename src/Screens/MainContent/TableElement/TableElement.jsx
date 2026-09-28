@@ -211,7 +211,7 @@ function TableElement({ tableId, type }) {
 
   useEffect(() => {
     dispatch(updateHeight(positionY + tableHeight + 150));
-  }, [positionY, tableHeight, dispatch]);
+  }, [positionY, tableHeight, ]);
 
   const dynamicSource = useMemo(() => {
     if (tableIS?.tableType !== 'dynamic' || tableIS.dynamicTableData?.id === undefined) {

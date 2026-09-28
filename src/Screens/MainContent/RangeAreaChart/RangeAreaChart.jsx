@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { TimingsConversion } from '../TimingsConversion';
 import ChartComponent from '../../../Components/ChartComponent';
 import {
-  PANEL, buildAxesLayout, buildBoundsMap, buildChartColors, buildChartFrame, buildChartPropTypes,
+  type_panel, buildAxesLayout, buildBoundsMap, buildChartColors, buildChartFrame, buildChartPropTypes,
   buildFilterRequestBody, buildLegend, buildNoDataAnnotations, buildRequestUrl, buildSeriesName,
   createBasicDetails, isAnalyticsPage, loadChartData, resolveChartRange, resolveSeriesColor,
   useChartRefresh, useChartStore,
@@ -13,7 +13,7 @@ const X_AXIS_EXTRAS = { nticks: 6 };
 const MARGIN = { t: 15, l: 40, r: 20, b: 50 };
 const LEGEND_OPTIONS = { yOffset: 0.3, fontSize: 8 };
 
-const BASIC_DETAILS = createBasicDetails('RangeAreaChart', {
+const basic_details_chart = createBasicDetails('RangeAreaChart', {
   fSize: '18px', xFonntSize: '16', yFonntSize: '16', legendTop: true,
 });
 
@@ -66,7 +66,7 @@ export default function RangeAreaChart({
       checkTheCond,
       chartId,
       storageKey: STORAGE_KEY,
-      basicDetails: BASIC_DETAILS,
+      basicDetails: basic_details_chart,
       sizeProps: { x: xIs, y: yIs, width, height },
       analyticsExtras: { multiaxis: chartList?.multiAxis, parameters: chartList?.parameters },
     }),
@@ -74,7 +74,7 @@ export default function RangeAreaChart({
   );
 
   const fetchData = useCallback(async () => {
-    const isPanel = type === PANEL;
+    const isPanel = type === type_panel;
     const paramData = isAnalyticsPage(paged) ? chartList : colors;
     const { fromDate, toDate } = resolveChartRange({
       paged, chartList, colors, isPanel, eventDatesIs, timingsConverter: TimingsConversion,

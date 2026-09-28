@@ -3,16 +3,16 @@ import { View } from 'react-native';
 import { TimingsConversion } from '../TimingsConversion';
 import ChartComponent from '../../../Components/ChartComponent';
 import {
-  PANEL, isAnalyticsPage, createBasicDetails, buildChartPropTypes, buildChartColors,
+  type_panel, isAnalyticsPage, createBasicDetails, buildChartPropTypes, buildChartColors,
   buildFilterRequestBody, buildRequestUrl, resolveChartRange, loadChartData, resolveHoverInfo,
   resolveSeriesColor, buildSeriesName, buildAxesLayout, buildLegend, buildNoDataAnnotations,
   buildChartFrame, useChartStore, useChartRefresh, useChartInsight,
 } from '../../../Components/chartUtils';
 
-const COLORS_KEY = 'barChart-colors';
+const colors_key = 'barChart-colors';
 const STACKED_TYPES = new Set(['SH', 'SV']);
 const VERTICAL_TYPES = new Set(['V', 'SV']);
-const BASIC_DETAILS = createBasicDetails('Bar Chart', { chartType: 'H', legendTop: true });
+const basic_details_chart = createBasicDetails('Bar Chart', { chartType: 'H', legendTop: true });
 
 const buildBarTrace = ({ paramId, index, paramData, paged, data, isVertical, multiaxis }) => {
   const x = [];
@@ -61,8 +61,8 @@ export default function BarChart({
       paged,
       checkTheCond,
       chartId,
-      storageKey: COLORS_KEY,
-      basicDetails: BASIC_DETAILS,
+      storageKey: colors_key,
+      basicDetails: basic_details_chart,
       sizeProps: { x: xIs, y: yIs, width, height },
       analyticsExtras: { multiaxis: chartList?.multiAxis, parameters: chartList?.parameters },
     }),
@@ -70,7 +70,7 @@ export default function BarChart({
   );
 
   const fetchDataAndRender = useCallback(async () => {
-    const isPanel = type === PANEL;
+    const isPanel = type === type_panel;
     const paramData = isAnalyticsPage(paged) ? chartList : barChartColors;
     const { fromDate, toDate } = resolveChartRange({
       paged, chartList, colors: barChartColors, isPanel, eventDatesIs, timingsConverter: TimingsConversion,

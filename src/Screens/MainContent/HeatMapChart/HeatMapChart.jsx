@@ -3,15 +3,15 @@ import { View } from 'react-native';
 import { TimingsConversion } from '../TimingsConversion';
 import ChartComponent from '../../../Components/ChartComponent';
 import {
-  HEATMAP_PALETTES, PANEL, isAnalyticsPage, createBasicDetails, buildChartPropTypes,
+  heatmap_palettes, type_panel, isAnalyticsPage, createBasicDetails, buildChartPropTypes,
   buildChartColors, buildFilterRequestBody, buildRequestUrl, resolveChartRange, loadChartData,
   resolveHoverInfo, buildNoDataAnnotations, buildChartFrame, useChartStore, useChartRefresh,
   useChartInsight,
 } from '../../../Components/chartUtils';
 
-const COLORS_KEY = 'heatMapChart-colors';
-const HOVER_TEMPLATE = 'Date: %{x}<br>Parameter: %{y}<br>Value: %{z}<extra></extra>';
-const BASIC_DETAILS = createBasicDetails('heatMap Chart', {
+const colors_key = 'heatMapChart-colors';
+const hover_template = 'Date: %{x}<br>Parameter: %{y}<br>Value: %{z}<extra></extra>';
+const basic_details_chart = createBasicDetails('heatMap Chart', {
   xFonntSize: '12', yFonntSize: '12', fSize: '12',
 });
 const HEAT_LEGEND = {
@@ -36,11 +36,11 @@ const buildHeatTrace = ({ data, paramData, paged, colors }) => ({
   z: data[0].z,
   x: data[0].x[0],
   y: paramData.parameters.map((ele) => (isAnalyticsPage(paged) ? ele.globalCode : ele.global)),
-  colorscale: HEATMAP_PALETTES[colors?.HeatpaletNo] ?? 'none',
+  colorscale: heatmap_palettes[colors?.HeatpaletNo] ?? 'none',
   hoverinfo: resolveHoverInfo(colors?.toolTip),
   type: 'heatmap',
   hoverongaps: false,
-  hovertemplate: HOVER_TEMPLATE,
+  hovertemplate: hover_template,
   colorbar: { thickness: 8, side: 'right', tickfont: { size: 8 } },
 });
 
@@ -73,15 +73,15 @@ export default function HeatMapChart({
       paged,
       checkTheCond,
       chartId,
-      storageKey: COLORS_KEY,
-      basicDetails: BASIC_DETAILS,
+      storageKey: colors_key,
+      basicDetails: basic_details_chart,
       sizeProps: { x: xIs, y: yIs, width, height },
     }),
     [paged, checkTheCond, chartId, xIs, yIs, width, height],
   );
 
   const fetchDataAndRender = useCallback(async () => {
-    const isPanel = type === PANEL;
+    const isPanel = type === type_panel;
     const paramData = isAnalyticsPage(paged) ? chartList : heatMapChartColors;
     const { fromDate, toDate } = resolveChartRange({
       paged, chartList, colors: heatMapChartColors, isPanel, eventDatesIs, timingsConverter: TimingsConversion,

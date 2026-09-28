@@ -193,7 +193,7 @@ const MainScreen = () => {
         setRefreshing(false);
       }
     }
-  }, [BASE_URL, userDetail?.projectName?.name, dispatch]);
+  }, [BASE_URL, userDetail?.projectName?.name, ]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -234,7 +234,7 @@ const MainScreen = () => {
         dispatch(action({}));
       }
     });
-  }, [shapesData, dispatch]);
+  }, [shapesData, ]);
 
   const fetchPanel = useCallback(async (id) => {
     setpanelLoading(true);
@@ -286,7 +286,7 @@ const MainScreen = () => {
     } finally {
       if (isMountedRef.current) setpanelLoading(false);
     }
-  }, [projectId, dispatch]);
+  }, [projectId, ]);
 
   const fetchPage = useCallback(async (id) => {
     setpanelLoading(true);
@@ -317,7 +317,7 @@ const MainScreen = () => {
     } finally {
       if (isMountedRef.current) setpanelLoading(false);
     }
-  }, [BASE_URL, userDetail?.projectName?.name, dispatch]);
+  }, [BASE_URL, userDetail?.projectName?.name, ]);
 
   const handleMapTouchStart = useCallback((event) => {
     if (event.nativeEvent.touches.length > 1) {

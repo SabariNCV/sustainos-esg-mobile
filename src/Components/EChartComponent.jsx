@@ -6,7 +6,7 @@ import { styles } from '../Screens/MainContent/styles';
 import { scaleHeight, scaleWidth, normalizeFont } from '../Constants/dynamicSize';
 import { panelscaleHeight, panelscaleWidth, panelnormalizeFont } from '../Constants/panelSize';
 import { COLORS } from '../Constants/Colors';
-import { PANEL, parseHeight } from './chartUtils';
+import { type_panel, parseHeight } from './chartUtils';
 
 const SPRING_CONFIG = { friction: 4, tension: 50, useNativeDriver: true };
 const PANEL_LEFT_OFFSET = 300;
@@ -21,7 +21,7 @@ export default function EChartComponent({ ChartColors, option, showtitle, loadin
         };
     }, [scaleAnim]);
 
-    const isPanel = type === PANEL;
+    const isPanel = type === type_panel;
     const scaleH = isPanel ? panelscaleHeight : scaleHeight;
     const scaleW = isPanel ? panelscaleWidth : scaleWidth;
     const scaleFont = isPanel ? panelnormalizeFont : normalizeFont;
@@ -38,7 +38,7 @@ export default function EChartComponent({ ChartColors, option, showtitle, loadin
                 height: scaleH(225),
                 position: 'absolute',
                 alignSelf: 'center',
-                width: scaleW(350),
+                width: scaleW(360),
             }}
         >
             {resize && (

@@ -260,7 +260,7 @@ function MapElement({ mapId, mapDataIs, onTouchStart, onTouchEnd }) {
 
   useEffect(() => {
     dispatch(updateHeight(positionY + parseHeight(resize?.height) + 10));
-  }, [positionY, resize?.height, dispatch]);
+  }, [positionY, resize?.height, ]);
 
   useEffect(() => {
     let active = true;

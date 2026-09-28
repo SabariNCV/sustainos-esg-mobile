@@ -2,13 +2,13 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { TimingsConversion } from '../TimingsConversion';
 import EChartComponent from '../../../Components/EChartComponent';
 import {
-  PANEL, isAnalyticsPage, createBasicDetails, buildChartPropTypes, buildChartColors,
+  type_panel, isAnalyticsPage, createBasicDetails, buildChartPropTypes, buildChartColors,
   buildFilterRequestBody, buildRequestUrl, resolveChartRange, loadChartData, resolveSeriesColor,
   buildEChartsLabel, buildEChartsLegend, ECHARTS_NO_DATA, useChartStore, useChartRefresh,
 } from '../../../Components/chartUtils';
 
-const COLORS_KEY = 'radialBarChart-colors';
-const BASIC_DETAILS = createBasicDetails('RadialBar Chart', {
+const colors_key = 'radialBarChart-colors';
+const basic_details_chart = createBasicDetails('RadialBar Chart', {
   fSize: '18px', xFonntSize: '16', yFonntSize: '16', timeRange: 'hour', legendType: 'code',
 });
 
@@ -78,15 +78,15 @@ export default function RadialBarChart({
       paged,
       checkTheCond,
       chartId,
-      storageKey: COLORS_KEY,
-      basicDetails: BASIC_DETAILS,
+      storageKey: colors_key,
+      basicDetails: basic_details_chart,
       sizeProps: { x: xIs, y: yIs, width, height },
     }),
     [paged, checkTheCond, chartId, xIs, yIs, width, height],
   );
 
   const fetchDataAndRender = useCallback(async () => {
-    const isPanel = type === PANEL;
+    const isPanel = type === type_panel;
     const paramData = isAnalyticsPage(paged) ? chartList : radialBarChartColors;
     const { fromDate, toDate } = resolveChartRange({
       paged, chartList, colors: radialBarChartColors, isPanel, eventDatesIs, timingsConverter: TimingsConversion,

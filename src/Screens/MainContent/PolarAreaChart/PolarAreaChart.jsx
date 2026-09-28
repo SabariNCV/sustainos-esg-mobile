@@ -7,10 +7,10 @@ import {
   useChartInsight,
 } from '../../../Components/chartUtils';
 
-const COLORS_KEY = 'polarAreaChart-colors';
+const colors_key = 'polarAreaChart-colors';
 const RECENT_MINUTES = 2;
 const POLAR_LEGEND = { orientation: 'h', x: 0, y: -0.5 };
-const BASIC_DETAILS = createBasicDetails('Polar Area Chart');
+const basic_details_chart = createBasicDetails('Polar Area Chart');
 
 const selectAll = (payload) => payload;
 
@@ -48,8 +48,8 @@ export default function PolarAreaChart({
       paged,
       checkTheCond,
       chartId,
-      storageKey: COLORS_KEY,
-      basicDetails: BASIC_DETAILS,
+      storageKey: colors_key,
+      basicDetails: basic_details_chart,
       sizeProps: { x: xIs, y: yIs, width, height },
     }),
     [paged, checkTheCond, chartId, xIs, yIs, width, height],

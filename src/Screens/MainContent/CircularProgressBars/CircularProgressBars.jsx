@@ -25,7 +25,7 @@ const CircularProgressBars = ({ progressStylesIs, id, type }) => {
 
   useEffect(() => {
     dispatch(updateHeight(positionY + shapeHeight));
-  }, [positionY, shapeHeight, dispatch]);
+  }, [positionY, shapeHeight, ]);
 
   const color = useMemo(
     () => resolveShapeColor(dynamicValue, shape.labelValueRange, shape.progressColor),

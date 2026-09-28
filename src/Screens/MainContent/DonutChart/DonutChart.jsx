@@ -3,14 +3,14 @@ import { View } from 'react-native';
 import { TimingsConversion } from '../TimingsConversion';
 import ChartComponent from '../../../Components/ChartComponent';
 import {
-  DEFAULT_CHART_COLORS, PANEL, isAnalyticsPage, createBasicDetails, buildChartPropTypes,
+  default_chart_colors, type_panel, isAnalyticsPage, createBasicDetails, buildChartPropTypes,
   buildChartColors, buildFilterRequestBody, buildRequestUrl, resolveChartRange, loadChartData,
   resolveHoverInfo, buildParameterLabel, buildLegend, buildNoDataAnnotations, buildChartFrame,
   useChartStore, useChartRefresh, useChartInsight,
 } from '../../../Components/chartUtils';
 
-const COLORS_KEY = 'donutChart-colors';
-const BASIC_DETAILS = createBasicDetails('Donut Chart', {
+const colors_key = 'donutChart-colors';
+const basic_details_chart = createBasicDetails('Donut Chart', {
   fSize: '18px', xFonntSize: '16', yFonntSize: '16',
 });
 
@@ -26,7 +26,7 @@ const buildDonutTrace = ({ data, paramData, paged, colors }) => ({
   textfont: { size: 12 },
   marker: {
     colors: isAnalyticsPage(paged)
-      ? DEFAULT_CHART_COLORS
+      ? default_chart_colors
       : paramData.parameters.map((ele) => ele.parameterColor),
   },
 });
@@ -53,15 +53,15 @@ export default function DonutChart({
       paged,
       checkTheCond,
       chartId,
-      storageKey: COLORS_KEY,
-      basicDetails: BASIC_DETAILS,
+      storageKey: colors_key,
+      basicDetails: basic_details_chart,
       sizeProps: { x: xIs, y: yIs, width, height },
     }),
     [paged, checkTheCond, chartId, xIs, yIs, width, height],
   );
 
   const fetchDataAndRender = useCallback(async () => {
-    const isPanel = type === PANEL;
+    const isPanel = type === type_panel;
     const paramData = isAnalyticsPage(paged) ? chartList : donutChartColors;
     const { fromDate, toDate } = resolveChartRange({
       paged, chartList, colors: donutChartColors, isPanel, eventDatesIs, timingsConverter: TimingsConversion,
