@@ -14,7 +14,6 @@ const CustomHeader = (props) => {
     const navigation = props?.navigation
     const icon = props?.icon
     const dispatch = useDispatch();
-   
     const userDetails = useSelector((state) => state.authSlice.userDetails);
     const notificationCount = useSelector((state) => state.mainSlice.notificationcount);
     const baseUrl = useSelector(state => state.mainSlice.baseUrlIs);

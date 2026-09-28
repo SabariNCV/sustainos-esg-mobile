@@ -1,220 +1,125 @@
-import React, { useEffect, useState } from 'react';
-import {
-    View,
-    StyleSheet,
-    Image
-} from 'react-native';
-import {
-    scaleHeight,
-    scaleWidth,
-} from '../../../Constants/dynamicSize';
-import {
-    panelscaleHeight,
-    panelscaleWidth
-} from '../../../Constants/panelSize';
-import { updateHeight } from '../../../Redux/ReduxSlice/mainSlice';
-import { SvgXml } from 'react-native-svg';
-import axios from 'axios';
+import React, { useEffect, useMemo } from 'react';
+import { View, StyleSheet, Image, useWindowDimensions } from 'react-native';
+import { SvgXml, SvgUri } from 'react-native-svg';
 import { useDispatch, useSelector } from 'react-redux';
 import { Buffer } from 'buffer';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { TimingsConversion } from '../TimingsConversion';
+import PropTypes from 'prop-types';
+import { updateHeight } from '../../../Redux/ReduxSlice/mainSlice';
+import { evaluateColorRange } from '../../../Components/elementUtils';
+import { getScalers } from '../../../Components/scalers';
+import { useShapeValue } from '../../../Components/useShapeValue';
+import { buildEventRange, clampHorizontal } from '../../../Components/shapeUtils';
 
-export default function Images(props) {
-    const { imageId, imageDataIs, type } = props;
-    const imageIs = imageDataIs?.[imageId]?.["image-colors"] ?? {};
-    const dispatch = useDispatch();
+const EMPTY_IMAGE = {};
+const SVG_DATA_PREFIX = 'data:image/svg+xml';
 
-    useEffect(() => {
-        const newHeight = Number(imageIs?.reSizeProperties?.y) + Number(imageIs?.reSizeProperties?.height);
-        dispatch(updateHeight(newHeight));
-    }, [Number(imageIs?.reSizeProperties?.y), dispatch]);
+const decodeSvgDataUri = (uri) => Buffer.from(uri.split(',')[1] ?? '', 'base64').toString('utf-8');
 
-    const eventDatesIs = useSelector(state => state.mainSlice.eventDate);
-    const isSvg = (uri) => {
-        return uri?.startsWith('data:image/svg+xml') || uri?.endsWith('.svg');
-    };
-    let parmValueColor = "";
-    const [labelParmValue, setlabelParmValue] = useState("");
-    const BASE_URL = useSelector(state => state.mainSlice.baseUrlIs);
-    const updateColor = (ele) => {
-        switch (ele?.condition) {
-            case "minMax":
-                if (parseFloat(labelParmValue) > parseFloat(ele?.min) && parseFloat(labelParmValue) < parseFloat(ele?.max)) {
-                    parmValueColor = ele?.color;
-                }
-                break;
-            case "greaterThan":
-                if (parseFloat(labelParmValue) > parseFloat(ele?.min)) {
-                    parmValueColor = ele?.color;
-                }
-                break;
-            case "lessThan":
-                if (parseFloat(labelParmValue) < parseFloat(ele?.max)) {
-                    parmValueColor = ele?.color;
-                }
-                break;
-            case "greaterThanEquall":
-                if (parseFloat(labelParmValue) >= parseFloat(ele?.max)) {
-                    parmValueColor = ele?.color;
-                }
-                break;
-            case "lessThanEquall":
-                if (parseFloat(labelParmValue) <= parseFloat(ele?.max)) {
-                    parmValueColor = ele?.color;
-                }
-                break;
-            case "text":
-                if (String(labelParmValue) == String(ele?.max)) {
-                    parmValueColor = ele?.color;
-                }
-                break;
-            default:
-                break;
-        }
-    };
+function ImageContent({ source, width, height, borderRadius }) {
+  const svgXml = useMemo(
+    () => (source?.startsWith(SVG_DATA_PREFIX) ? decodeSvgDataUri(source) : null),
+    [source],
+  );
 
-    useEffect(() => {
-        let refreshTime = 0;
-        const refreshFreq = imageIs?.refreshFreq?.split(" ");
-        if (refreshFreq && refreshFreq.length === 2) {
-            const value = parseInt(refreshFreq[0]);
-            const unit = refreshFreq[1];
-            if (unit === "Second") {
-                refreshTime = value * 1000;
-            } else if (unit === "Minute") {
-                refreshTime = value * 1000 * 60;
-            } else if (unit === "Hours") {
-                refreshTime = value * 1000 * 60 * 60;
-            } else {
-                refreshTime = "None";
-            }
-        } else {
-            refreshTime = "None";
-        }
-        const fetchDataAndRender = async () => {
-            let paramData, fromDateIs, toDateIs;
-            if (type === 'panel') {
-                paramData = imageIs;
-                toDateIs = eventDatesIs[1]?.toISOString()?.slice(0, 19)?.replace("T", " ");
-                fromDateIs = eventDatesIs[0]
-                    ?.toISOString()
-                    ?.slice(0, 19)
-                    ?.replace("T", " ");
-            } else {
-                paramData = imageIs;
-
-                if (imageIs?.aggregateTime !== "custom") {
-                    const timeIs = TimingsConversion(imageIs?.aggregateTime);
-                    fromDateIs = timeIs[0];
-                    toDateIs = timeIs[1];
-                } else {
-                    fromDateIs = imageIs?.fromDate;
-                    toDateIs = imageIs?.toDate;
-                }
-            }
-
-            const parametersId = paramData?.parameters?.map((ele) => ele?.parameterId);
-            const RequestBody = {};
-            const filter_tags = [];
-            paramData?.parameters?.forEach((item) => {
-                const conditions = item?.fiterConditionsNewFormat?.join(" ");
-                RequestBody[item?.parameterId] = conditions;
-                item?.fiterConditionsNewFormat?.forEach((condition) => {
-                    const paramId = condition?.split(" ")[0];
-                    if (!parametersId?.includes(parseInt(paramId)) && !filter_tags?.includes(paramId)) {
-                        filter_tags?.push(paramId);
-                    }
-                });
-            });
-            RequestBody["filter_tags"] = filter_tags?.join(",");
-            let url;
-            if (paramData.aggregateTime === "custom" || type === 'panel') {
-                url = `${BASE_URL}dataservice_app/api/parameter_values/?id=${parametersId}&from_date=${fromDateIs}&to_date=${toDateIs}&aggregation_type=${paramData.aggregateRange}&filter_condition=${JSON.stringify(RequestBody)}`;
-            } else {
-                url = `${BASE_URL}dataservice_app/api/parameter_values/?id=${parametersId}&time_frequency=${paramData?.aggregateTime}&aggregation_type=${paramData.aggregateRange}&filter_condition=${JSON.stringify(RequestBody)}`;
-            }
-            try {
-                const token = await AsyncStorage.getItem('jwttoken');
-                const response = await axios.get(url, {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
-                const data = response?.data?.data;
-                if (data) {
-                    const value = data[parametersId[0]];
-                    setlabelParmValue(value);
-                }
-            } catch (error) {
-                console.error("Error fetching data:", error);
-            }
-        };
-        if (imageIs?.shapeType === "dynamic" && imageIs?.parameters?.length > 0) {
-            fetchDataAndRender();
-            if (refreshTime !== "None") {
-                const intervalId = setInterval(fetchDataAndRender, refreshTime);
-                return () => clearInterval(intervalId);
-            }
-        }
-    }, [imageIs?.parameters, imageIs?.aggregateTime, imageIs?.aggregateRange]);
-
-    // Apply conditions and update colors using map
-    imageIs?.labelValueRange?.map((ele) => updateColor(ele));
-
-    return (
-        <>
-            {
-                imageIs?.reSizeProperties &&
-                <View style={[styles.image,
-                {
-                    left: type === "panel" ? panelscaleWidth(Number(imageIs?.reSizeProperties?.x < 50 ? imageIs?.reSizeProperties?.x : imageIs?.reSizeProperties?.x - 15)) : scaleWidth(Number(imageIs?.reSizeProperties?.x < 50 ? imageIs?.reSizeProperties?.x : imageIs?.reSizeProperties?.x)),
-                    top: type === "panel" ? panelscaleHeight(Number(imageIs?.reSizeProperties?.y)) : scaleHeight(Number(imageIs?.reSizeProperties?.y)),
-                    zIndex: imageIs?.chartZindex,
-                }
-                ]}>
-                    {imageIs?.SquareBg && isSvg(parmValueColor !== "" ? parmValueColor : imageIs?.SquareBg) ? (
-                        <View
-                            style={{
-                                overflow: 'hidden',
-                                height: type === "panel"
-                                    ? panelscaleHeight(parseInt(imageIs?.reSizeProperties?.height))
-                                    : scaleHeight(parseInt(imageIs?.reSizeProperties?.height)),
-                                width: type === "panel"
-                                    ? panelscaleWidth(parseInt(imageIs?.reSizeProperties?.width))
-                                    : scaleHeight(parseInt(imageIs?.reSizeProperties?.width)),
-                            }}
-                        >
-                            <SvgXml
-                                xml={Buffer.from(parmValueColor !== "" ? parmValueColor : imageIs?.SquareBg?.split(',')[1], 'base64')?.toString('utf-8')}
-                                height={type === "panel" ? panelscaleHeight(parseInt(imageIs?.reSizeProperties?.height)) : scaleHeight(parseInt(imageIs?.reSizeProperties?.height))}
-                                width={type === "panel" ? panelscaleHeight(parseInt(imageIs?.reSizeProperties?.width)) : scaleWidth(parseInt(imageIs?.reSizeProperties?.width))}
-                                style={styles.svg} viewBox="0 0 100 100" />
-                        </View>
-                    ) : (
-
-                        <Image
-                            resizeMode={imageIs.contain === 'cover' ? 'cover' : 'contain'}
-                            style={{
-                                zIndex: imageIs?.chartZindex,
-                                overflow: 'hidden',
-                                borderRadius: imageIs?.borderRadius ? Number(imageIs?.borderRadius) : 1,
-                                height: type === "panel" ? panelscaleHeight(parseInt(imageIs?.reSizeProperties?.height)) : scaleHeight(parseInt(imageIs?.reSizeProperties?.height) + 3),
-                                width: type === "panel" ? panelscaleHeight(parseInt(imageIs?.reSizeProperties?.width)) : scaleWidth(parseInt(imageIs?.reSizeProperties?.width) - 3)
-                            }} source={imageIs !== null && { uri: parmValueColor !== "" ? parmValueColor : imageIs?.SquareBg }} />
-                    )}
-
-                </View>
-            }</>
-    )
+  if (!source) {
+    return null;
+  }
+  if (svgXml) {
+    return <SvgXml xml={svgXml} width={width} height={height} viewBox="0 0 100 100" />;
+  }
+  if (source.endsWith('.svg')) {
+    return <SvgUri uri={source} width={width} height={height} />;
+  }
+  return <Image resizeMode="contain" style={{ width, height, borderRadius }} source={{ uri: source }} />;
 }
 
+ImageContent.propTypes = {
+  source: PropTypes.string,
+  width: PropTypes.number.isRequired,
+  height: PropTypes.number.isRequired,
+  borderRadius: PropTypes.number.isRequired,
+};
+
+ImageContent.defaultProps = {
+  source: undefined,
+};
+
+function Images({ imageId, imageDataIs, type }) {
+  const imageIs = imageDataIs?.[imageId]?.['image-colors'] ?? EMPTY_IMAGE;
+  const dispatch = useDispatch();
+  const { width: screenWidth } = useWindowDimensions();
+  const eventDates = useSelector((state) => state.mainSlice.eventDate);
+  const baseUrl = useSelector((state) => state.mainSlice.baseUrlIs);
+  const isPanel = type === 'panel';
+
+  const eventRange = useMemo(() => (isPanel ? buildEventRange(eventDates) : null), [isPanel, eventDates]);
+  const paramValue = useShapeValue(imageIs, baseUrl, isPanel, eventRange);
+
+  const resize = imageIs.reSizeProperties;
+  const positionY = Number(resize?.y);
+  const rawHeight = Number(resize?.height);
+
+  useEffect(() => {
+    if (Number.isFinite(positionY) && Number.isFinite(rawHeight)) {
+      dispatch(updateHeight(positionY + rawHeight));
+    }
+  }, [positionY, rawHeight, dispatch]);
+
+  const colorSource = useMemo(
+    () => evaluateColorRange(imageIs.labelValueRange, paramValue, ''),
+    [imageIs.labelValueRange, paramValue],
+  );
+
+  const layout = useMemo(() => {
+    if (!resize) {
+      return null;
+    }
+    const { sw, sh } = getScalers(type);
+    const x = Number(resize.x);
+    const offsetX = isPanel && x >= 50 ? 15 : 0;
+    return clampHorizontal(
+      {
+        left: sw(x - offsetX),
+        top: sh(Number(resize.y)),
+        width: sw(Number.parseInt(resize.width, 10)),
+        height: sh(Number.parseInt(resize.height, 10)),
+      },
+      screenWidth,
+    );
+  }, [resize, type, isPanel, screenWidth]);
+
+  if (!layout) {
+    return null;
+  }
+
+  return (
+    <View style={[styles.container, layout, { zIndex: imageIs.chartZindex }]}>
+      <ImageContent
+        source={colorSource || imageIs.SquareBg}
+        width={layout.width}
+        height={layout.height}
+        borderRadius={imageIs.borderRadius ? Number(imageIs.borderRadius) : 1}
+      />
+    </View>
+  );
+}
+
+Images.propTypes = {
+  imageId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
+  imageDataIs: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
+  type: PropTypes.string,
+};
+
+Images.defaultProps = {
+  imageDataIs: undefined,
+  type: undefined,
+};
+
+export default React.memo(Images);
+
 const styles = StyleSheet.create({
-    image: {
-        alignSelf: 'center',
-        position: 'absolute'
-    },
-    svg: {
-        resizeMode: 'contain',
-    },
-})
+  container: {
+    position: 'absolute',
+    overflow: 'hidden',
+  },
+});

@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import WebView from 'react-native-webview';
 import { scaleHeight, scaleWidth } from '../../../Constants/dynamicSize';
-import { COLORS } from '../../../Constants/Colors'
+import { COLORS } from '../../../Constants/colors'
 
 const Shapes = (props) => {
   const data = props?.data

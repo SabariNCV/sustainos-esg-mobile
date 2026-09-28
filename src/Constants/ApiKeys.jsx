@@ -1,0 +1,2 @@
+export const MAPBOX_ACCESS_TOKEN = 'sk.eyJ1IjoiYnNrLW5jdi10b29sa2l0cyIsImEiOiJjbHZ1dDIwNmQxb3Z5MnJycmp2b3JjODE0In0.i20ygdcCKF3w0xTispwyWg';
+export const WEATHER_API_KEY = '3aec67bab2dd42b0b9264334240103';

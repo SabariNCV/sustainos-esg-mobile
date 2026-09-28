@@ -18,7 +18,7 @@ const componentSlice = createSlice({
   name: 'chartComponent',
   initialState,
   reducers: {
-    setTraces(state, action) {
+    setTracesIs(state, action) {
       state.traces = action.payload;
     },
     resetChartState(state) {
@@ -93,5 +93,5 @@ const componentSlice = createSlice({
   }
 });
 
-export const { setTraces, resetChartState, resetMenuState } = componentSlice.actions;
+export const { setTracesIs, resetChartState, resetMenuState } = componentSlice.actions;
 export default componentSlice.reducer;

@@ -148,13 +148,10 @@ const ChartComponent = (props) => {
   const currentPlotlyRef = useRef(null);
   const plotlyRef = useRef(null);
   const ref = useRef(null);
-
   const [showModal, setShowModal] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
-
   const radius = getRadius(props?.ChartColors?.isBorderRadius);
   const rndproperties = props?.layout?.rndproperties;
-
   const cleanedAiText = useMemo(() => sanitizeAiText(props?.aiText), [props?.aiText]);
 
   const handleImage = useCallback(async () => {
@@ -247,7 +244,7 @@ const ChartComponent = (props) => {
     borderBottomRightRadius: radius,
     backgroundColor: props?.ChartColors?.areaBackground ? props?.ChartColors?.areaBackground : COLORS.WHITE,
   }), [radius, props?.ChartColors?.areaBackground]);
-
+  
   const animatedWrapperStyle = useMemo(() => {
     if (!rndproperties) return null;
     const height = getAnimatedWrapperHeight(rndproperties, screen, type);
